@@ -35,12 +35,12 @@ vec4 getDistortedImage(vec2 uv) {
 	vec2 look = uv;
 
     // Some random calculation, depended Y axis, for wave effect
-    float xShift = (sin(look.y + time / 20.0) / 20.0 * onOff(1.0, 0.1, 0.3) * cos(time / 10.0)) / 10.0;
+    float xShift = (sin(look.y + time / 2.0) / 20.0 * onOff(0.1, 0.01, 0.03) * cos(time)) / 100.0;
 
     // Random calculation for broken effect
-    float yShift = onOff(1.0, 0.01, 0.04) * (
-        sin(time / 15.0) + (sin(time / 10.0) * cos(time + 10.0))
-    ) / 200.0;
+    float yShift = onOff(0.2, 0.01, 0.04) * (
+        sin(time / 15.0) + (sin(time / 2.0) * cos(time + 10.0))
+    ) / 400.0;
 
 	look.x = look.x + xShift;
 	look.y = look.y + yShift;
