@@ -7,9 +7,9 @@ uniform float time;
 varying vec2 vTextureCoord;
 
 #define CHAR_SIZE vec2(3, 7)
-#define PADDING vec2(64.0, 48.0)
-#define CHAR_SPACING vec2(16, 24)
-#define ZOOM 0.4
+#define PADDING vec2(70.0, 64.0)
+#define CHAR_SPACING vec2(14, 32)
+#define ZOOM 0.34
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃

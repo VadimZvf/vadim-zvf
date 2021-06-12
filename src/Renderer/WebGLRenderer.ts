@@ -13,10 +13,6 @@ import glitchImage from '../glitch.png';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
-const MAX_SYMBOLS_COUNT = 960;
-const SYMBOLS_PER_LINE = 48;
-const LINES_COUNT = MAX_SYMBOLS_COUNT / SYMBOLS_PER_LINE;
-
 /**
  * Text mappink work like this:
  *
@@ -132,6 +128,10 @@ export class WebGLRenderer {
         this.size = params.size;
     }
 
+    static maxSymbolsCount = 972;
+    static symbolsPerLine = 54;
+    static linesCount = 972 / 54;
+
     private size: { width: number; height: number };
     private camera: OrthographicCamera;
     private scene: Scene;
@@ -187,17 +187,23 @@ export class WebGLRenderer {
      * @param lines max 20 lines. 48 - max line length
      */
     public setLines(lines: string[]) {
+        if (lines.length > WebGLRenderer.linesCount) {
+            console.warn(
+                `Too many lines - ${lines.length}. Maximum available - ${WebGLRenderer.symbolsPerLine}`
+            );
+        }
+
         let text = '';
 
-        const croupedLines = lines.slice(0, LINES_COUNT);
+        const croupedLines = lines.slice(0, WebGLRenderer.linesCount);
 
         for (let index = 0; index < croupedLines.length; index++) {
-            let line = lines[index].slice(0, SYMBOLS_PER_LINE);
+            let line = lines[index].slice(0, WebGLRenderer.symbolsPerLine);
             // Fill all lines to line max length
             // only NOT for last line
             // Becouse we shold know, where to put input cursor
             if (index !== lines.length - 1) {
-                line = line.padEnd(SYMBOLS_PER_LINE, ' ');
+                line = line.padEnd(WebGLRenderer.symbolsPerLine, ' ');
             }
 
             text += line;
