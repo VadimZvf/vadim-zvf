@@ -19,7 +19,7 @@ varying vec2 vTextureCoord;
 // ┃        Noise effect        ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 float noise(vec2 uv) {
-    float s = texture(uGlitch, uv + sin(time * 2.0)).x;
+    float s = texture2D(uGlitch, uv + sin(time * 2.0)).x;
     return s / 5.0; // spped up texture
 }
 
@@ -154,9 +154,10 @@ vec4 getText(vec2 uv) {
     // Calculate how match 
     float charIndex = bucket.y * numCharsRow + bucket.x;
 
-    if (bucket.y >= 0.0 && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
-        float charId = uText[int(charIndex)];
+    int intCharIndex = int(charIndex);
+    float charId = uText[intCharIndex];
 
+    if (bucket.y >= 0.0 && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
         // Calculate current point position inside grid
         vec2 cursor = floor(currentCoord / CHAR_SPACING) * CHAR_SPACING;
         // Render char
