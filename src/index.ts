@@ -37,26 +37,38 @@ function init() {
             ]);
         }
 
-        if (renderer.getLastLine() === 'reset') {
+        if (renderer.getLastLine() === 'dog') {
             renderer.setContent([
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
+                ' ███     ███',
+                '█░░░█████░░░█',
+                '█░░█     █░░█',
+                '█░██  ░░░██░█',
+                ' █ █ █░█░█ █',
+                '   █  ░░░█',
+                '  █       █',
+                '  █  ███  █',
+                '  █  ███  █',
+                '  █       █    ██',
+                '   █  █  █ █   █░█',
+                '    █████  ░█   █░█',
+                '       █   ░░█   █ █',
+                '       █   ░░░█  █ █',
+                '       █ █ █░░░██   █',
+                '       █ █ █        █',
+                '       █ █ █        █',
+                '       █ █ █     █  █',
+                '      █  █  █   █   █',
+                '      ███████████████',
             ]);
+        }
+
+        if (renderer.getLastLine() === 'reset') {
+            renderer.setContent(Array(20).fill(' '));
 
             /// (T_T)
             setTimeout(() => {
                 renderer.setContent([]);
-            }, 20);
+            }, 50);
         }
 
         renderer.addLine('');
