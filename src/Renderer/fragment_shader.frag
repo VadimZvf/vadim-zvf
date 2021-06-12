@@ -47,6 +47,9 @@ vec2 getOffsetCoordinatesByFisheye(vec2 sourceCoordinates) {
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃     Distortion effect      ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+// a - first value
+// b - second value
+// c - frequency, 0 - always, 1 - never
 float onOff(float a, float b, float c) {
     return step(c, sin(time / 100.0 + a * cos(time / 10.00 * b)));
 }
@@ -55,12 +58,15 @@ vec2 getDistortedCoords(vec2 uv) {
     vec2 look = uv;
 
     // Some random calculation, depended Y axis, for wave effect
-    float xShift = (sin(look.y + time / 2.0) / 15.0 * onOff(0.5, 0.08, 0.03) * cos(time)) / 50.0;
+    float xShift = (
+        (sin(look.y * 100.0 + time) / 30.0 * onOff(0.0, 0.01, 0.03) * cos(look.y * time / 2.0)) *
+        onOff(1000.0, 0.1, 0.98)
+    );
 
     // Random calculation for broken effect
-    float yShift = onOff(0.2, 0.01, 0.04) * (
+    float yShift = onOff(0.2, 0.01, 0.5) * (
         sin(time / 15.0) + (sin(time / 2.0) * cos(time + 10.0))
-    ) / 400.0;
+    ) / 300.0;
 
     look.x = look.x + xShift;
     look.y = look.y + yShift;

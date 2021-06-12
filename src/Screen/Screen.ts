@@ -49,10 +49,12 @@ export default class Screen {
     }
 
     private onType(text: string) {
-        this.typedText += text;
+        if (this.typedText.length < WebGLRenderer.symbolsPerLine) {
+            this.typedText += text;
 
-        this.checkLinesCount();
-        this.updateRenderer();
+            this.checkLinesCount();
+            this.updateRenderer();
+        }
     }
 
     private onDelete() {
