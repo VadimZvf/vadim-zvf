@@ -81,6 +81,8 @@ const symbolsMapping: Record<string, number> = {
     '-': 3584,
     '█': 2097151,
     '░': 1398101,
+    ':': 73872,
+    '>': 139936,
 };
 
 function mapTextToBitMasksArray(text: string = ''): Float32Array {
@@ -144,13 +146,8 @@ export class WebGLRenderer {
     private fragmentShader = fragmentShader;
 
     public render() {
-        if (this.material.uniforms.time.value > 1000) {
-            this.material.uniforms.time.value = 0;
-        } else {
-            this.material.uniforms.time.value =
-                this.material.uniforms.time.value + 1;
-        }
-        this.material.uniformsNeedUpdate = true;
+        this.material.uniforms.time.value =
+            this.material.uniforms.time.value + 1;
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -167,7 +164,8 @@ export class WebGLRenderer {
                     value: new Vector2(this.size.width, this.size.height),
                 },
                 uText: { value: mapTextToBitMasksArray(this.uText) },
-                uTextLength: { value: this.uText.length },
+                uLastCharPosition: { value: this.uText.length },
+                uShowCursor: { value: 1 },
                 time: { value: 0 },
             },
             vertexShader: this.vertexShader,
@@ -183,36 +181,38 @@ export class WebGLRenderer {
         this.loadGlichTexture();
     }
 
-    /**
-     * @param lines max 20 lines. 48 - max line length
-     */
     public setLines(lines: string[]) {
         if (lines.length > WebGLRenderer.linesCount) {
             console.warn(
-                `Too many lines - ${lines.length}. Maximum available - ${WebGLRenderer.symbolsPerLine}`
+                `Too many lines - ${lines.length}. Maximum available - ${WebGLRenderer.linesCount}`
             );
         }
 
         let text = '';
+        let lastSymbolPosition = 0;
 
         const croupedLines = lines.slice(0, WebGLRenderer.linesCount);
 
         for (let index = 0; index < croupedLines.length; index++) {
-            let line = lines[index].slice(0, WebGLRenderer.symbolsPerLine);
+            let line = lines[index]
+                .slice(0, WebGLRenderer.symbolsPerLine)
+                .padEnd(WebGLRenderer.symbolsPerLine, ' ');
+
+            text += line;
+
             // Fill all lines to line max length
             // only NOT for last line
             // Becouse we shold know, where to put input cursor
             if (index !== lines.length - 1) {
-                line = line.padEnd(WebGLRenderer.symbolsPerLine, ' ');
+                lastSymbolPosition += line.length;
+            } else {
+                lastSymbolPosition += lines[index].length;
             }
-
-            text += line;
         }
 
         this.uText = text;
         this.material.uniforms.uText.value = mapTextToBitMasksArray(this.uText);
-        this.material.uniforms.uTextLength.value = this.uText.length;
-        this.material.uniformsNeedUpdate = true;
+        this.material.uniforms.uLastCharPosition.value = lastSymbolPosition;
     }
 
     private loadGlichTexture() {

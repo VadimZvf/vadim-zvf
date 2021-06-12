@@ -2,13 +2,17 @@ precision mediump float;
 uniform sampler2D uGlitch;
 uniform vec2 uResolution;
 uniform float uText[1000];
-uniform float uTextLength;
+uniform float uLastCharPosition;
+uniform float uShowCursor;
 uniform float time;
 varying vec2 vTextureCoord;
 
+// Size of bit map character
 #define CHAR_SIZE vec2(3, 7)
-#define PADDING vec2(70.0, 64.0)
+// Size of box with symbol
 #define CHAR_SPACING vec2(14, 32)
+// Padding for text container, for both sides. Should be a multiple of CHAR_SPACING
+#define PADDING vec2(70.0, 64.0)
 #define ZOOM 0.34
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -153,8 +157,8 @@ vec4 getText(vec2 uv) {
         vec4 charColor = vec4(1.0, 1.0, 1.0, 0.0) * char(charId, currentCoord, cursor);
 
         // Render cursor
-        float isLastChar = 1.0 - step(0.5, abs(uTextLength - charIndex));
-        charColor += vec4(1.0, 1.0, 1.0, 0.0) * isLastChar * sin(time / 2.0);
+        float isLastChar = 1.0 - step(0.5, abs(uLastCharPosition - charIndex));
+        charColor += vec4(1.0, 1.0, 1.0, 0.0) * uShowCursor * isLastChar * sin(time / 6.0);
 
         return charColor;
     }

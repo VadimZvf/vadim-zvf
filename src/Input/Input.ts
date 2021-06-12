@@ -32,6 +32,15 @@ class Input {
         });
     }
 
+    public subscribeBackspaceKeyEvent(listener: () => void) {
+        this.textareaNode.addEventListener('keyup', (event) => {
+            if (event.keyCode === 8) {
+                listener();
+            }
+            this.textareaNode.value = '';
+        });
+    }
+
     public subscribeEnterKeyEvent(listener: () => void) {
         this.textareaNode.addEventListener('keyup', (event) => {
             if (event.keyCode === 13) {
