@@ -24,6 +24,41 @@ function init() {
             renderer.addLine('See you next time');
         }
 
+        if (renderer.getLastLine() === 'heart') {
+            renderer.setContent([
+                '  ████   █████',
+                ' █    █ █     █',
+                '█      █       █',
+                ' █            █',
+                '   █        █',
+                '     █    █',
+                '      █ █',
+                '       █',
+            ]);
+        }
+
+        if (renderer.getLastLine() === 'reset') {
+            renderer.setContent([
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+            ]);
+
+            /// (T_T)
+            setTimeout(() => {
+                renderer.setContent([]);
+            }, 20);
+        }
+
         renderer.addLine('');
     });
 

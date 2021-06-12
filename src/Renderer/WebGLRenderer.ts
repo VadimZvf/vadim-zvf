@@ -80,9 +80,13 @@ const symbolsMapping: Record<string, number> = {
     ch_8: 709994.0,
     ch_9: 710250.0,
     ch_0: 711530.0,
+    'ch_!': 1198116.0,
+    'ch_,': 36.0,
+    'ch_-': 3584.0,
+    'ch_█': 2097151.0,
 };
 
-function mapTextToBitMasksArray(text: string = '') {
+function mapTextToBitMasksArray(text: string = ''): Float32Array {
     const masks = [];
 
     for (let index = 0; index < text.length; index++) {
@@ -91,7 +95,7 @@ function mapTextToBitMasksArray(text: string = '') {
         masks.push(mask);
     }
 
-    return masks;
+    return new Float32Array(masks);
 }
 
 interface IParams {
@@ -201,6 +205,7 @@ export class WebGLRenderer {
         this.uText = text;
         this.material.uniforms.uText.value = mapTextToBitMasksArray(this.uText);
         this.material.uniforms.uTextLength.value = this.uText.length;
+        this.material.uniformsNeedUpdate = true;
     }
 
     private loadGlichTexture() {

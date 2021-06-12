@@ -9,7 +9,7 @@ varying vec2 vTextureCoord;
 #define CHAR_SIZE vec2(3, 7)
 #define PADDING vec2(64.0, 48.0)
 #define CHAR_SPACING vec2(16, 24)
-#define ZOOM 0.5
+#define ZOOM 0.4
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃
@@ -51,7 +51,7 @@ vec2 getDistortedCoords(vec2 uv) {
     vec2 look = uv;
 
     // Some random calculation, depended Y axis, for wave effect
-    float xShift = (sin(look.y + time / 2.0) / 20.0 * onOff(0.1, 0.01, 0.03) * cos(time)) / 100.0;
+    float xShift = (sin(look.y + time / 2.0) / 15.0 * onOff(0.5, 0.08, 0.03) * cos(time)) / 50.0;
 
     // Random calculation for broken effect
     float yShift = onOff(0.2, 0.01, 0.04) * (
