@@ -1,4 +1,3 @@
-import { SVGRenderer } from './SVGRenderer';
 import { WebGLRenderer } from './WebGLRenderer';
 
 interface IParams {
@@ -12,19 +11,12 @@ class Renderer {
     constructor(params: IParams) {
         this.render = this.render.bind(this);
 
-        this.svgRenderer = new SVGRenderer(params);
         this.webGLRenderer = new WebGLRenderer(params);
 
         this.webGLRenderer.createScreen();
-
-        this.svgRenderer.addImageChageListener((image) => {
-            this.webGLRenderer.updateScreenTextureMap(image);
-        });
-
         this.init();
     }
 
-    svgRenderer: SVGRenderer;
     webGLRenderer: WebGLRenderer;
     lines: string[] = [];
 
@@ -40,12 +32,12 @@ class Renderer {
 
     public setContent(lines: string[]) {
         this.lines = lines;
-        this.svgRenderer.setLines(this.lines);
+        this.webGLRenderer.setLines(this.lines);
     }
 
     public addLine(line: string) {
         this.lines.push(line);
-        this.svgRenderer.setLines(this.lines);
+        this.webGLRenderer.setLines(this.lines);
     }
 
     public addText(text: string) {
@@ -56,7 +48,7 @@ class Renderer {
             this.lines.push(text);
         }
 
-        this.svgRenderer.setLines(this.lines);
+        this.webGLRenderer.setLines(this.lines);
     }
 
     public getLastLine(): string {

@@ -5,7 +5,7 @@ import './index.css';
 function init() {
     const renderer = new Renderer({
         size: {
-            width: 900,
+            width: 896,
             height: 600,
         },
     });
