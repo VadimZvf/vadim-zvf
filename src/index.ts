@@ -16,13 +16,13 @@ function init() {
             case 'help':
                 screen.addContent([
                     'Available commands:',
-                    '- help',
                     '- contacts',
                     '- socials',
                     '- show me cat',
                     '- show me dog',
                     '- rainbow',
                     '- source code',
+                    '- help',
                     '- clean',
                 ]);
                 break;

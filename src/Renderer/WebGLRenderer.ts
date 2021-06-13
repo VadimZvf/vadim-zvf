@@ -12,6 +12,11 @@ import {
 import glitchImage from '../glitch.png';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
+import getCharGLSL1 from './get_char_by_index_gl1.frag';
+import getCharGLSL2 from './get_char_by_index_gl2.frag';
+
+const userAgent = navigator.userAgent.toLowerCase();
+const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
 
 /**
  * Text mappink work like this:
@@ -146,7 +151,8 @@ export class WebGLRenderer {
     private uText = '';
 
     private vertexShader = vertexShader;
-    private fragmentShader = fragmentShader;
+    private fragmentShader =
+        fragmentShader + (isSafari ? getCharGLSL1 : getCharGLSL2);
 
     public render() {
         this.material.uniforms.time.value =
@@ -158,7 +164,7 @@ export class WebGLRenderer {
         this.glitchTexture = new Texture();
         this.glitchTexture.wrapS = RepeatWrapping;
         this.glitchTexture.wrapT = RepeatWrapping;
-
+        console.log(this.fragmentShader);
         const geometry = new PlaneGeometry(this.size.width, this.size.height);
         this.material = new ShaderMaterial({
             uniforms: {

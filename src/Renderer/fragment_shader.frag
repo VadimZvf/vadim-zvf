@@ -1,7 +1,7 @@
 precision mediump float;
 uniform sampler2D uGlitch;
 uniform vec2 uResolution;
-uniform float uText[1000];
+uniform float uText[973];
 uniform float uLastCharPosition;
 uniform float uShowCursor;
 uniform float uShowRainbow;
@@ -15,6 +15,9 @@ varying vec2 vTextureCoord;
 // Padding for text container, for both sides. Should be a multiple of CHAR_SPACING
 #define PADDING vec2(70.0, 64.0)
 #define ZOOM 0.34
+
+// Define function that will be added by browser specific
+float getCharId(int index);
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃
@@ -148,7 +151,7 @@ float char(float ch, vec2 uv, vec2 cursor) {
 
 vec4 getText(vec2 uv) {
     // Coords is value betwean 0 and 1, here we transform this value to real coords 1,2,3,4....
-    vec2 currentCoord = getDistortedCoords(uv) * uResolution;
+    vec2 currentCoord = uv * uResolution;
 
     // Calculate how match symbols was before current point
     vec2 bucket = floor(
@@ -163,8 +166,8 @@ vec4 getText(vec2 uv) {
     // Calculate how match 
     float charIndex = bucket.y * numCharsRow + bucket.x;
 
-    int intCharIndex = int(charIndex);
-    float charId = uText[intCharIndex];
+    // Look "getCharId" method in "./get_char_by_index_gl2.frag" or "get_char_by_index_gl1.frag"
+    float charId = getCharId(int(charIndex));
 
     if (bucket.y >= 0.0 && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
         // Calculate current point position inside grid
@@ -189,9 +192,10 @@ void main(void) {
 
     // Apply fisheye effect, and distortion effect
     vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(uv);
+    vec2 uvWithDistortion = getDistortedCoords(fisheyedCoords);
 
     // Add text
-    currentPointColor += getText(fisheyedCoords);
+    currentPointColor += getText(uvWithDistortion);
     // add stripes effect
     currentPointColor += stripes(fisheyedCoords);
     // apply noise texture
