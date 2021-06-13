@@ -168,7 +168,8 @@ export class WebGLRenderer {
                 },
                 uText: { value: mapTextToBitMasksArray(this.uText) },
                 uLastCharPosition: { value: this.uText.length },
-                uShowCursor: { value: 1 },
+                uShowCursor: { value: 0 },
+                uShowRainbow: { value: 0 },
                 time: { value: 0 },
             },
             vertexShader: this.vertexShader,
@@ -216,6 +217,22 @@ export class WebGLRenderer {
         this.uText = text;
         this.material.uniforms.uText.value = mapTextToBitMasksArray(this.uText);
         this.material.uniforms.uLastCharPosition.value = lastSymbolPosition;
+    }
+
+    public enableCursor() {
+        this.material.uniforms.uShowCursor.value = 1;
+    }
+
+    public disableCursor() {
+        this.material.uniforms.uShowCursor.value = 0;
+    }
+
+    public toggleRainbowEffect() {
+        if (this.material.uniforms.uShowRainbow.value) {
+            this.material.uniforms.uShowRainbow.value = 0;
+        } else {
+            this.material.uniforms.uShowRainbow.value = 1;
+        }
     }
 
     private loadGlichTexture() {

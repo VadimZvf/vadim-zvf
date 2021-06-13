@@ -21,6 +21,7 @@ function init() {
                     '- socials',
                     '- show me cat',
                     '- show me dog',
+                    '- rainbow',
                     '- source code',
                     '- clean',
                 ]);
@@ -105,6 +106,9 @@ function init() {
                     '      ███████████████',
                 ]);
 
+                break;
+            case 'rainbow':
+                screen.toggleRainbowEffect();
                 break;
             case 'clean':
                 screen.addContent(Array(18).fill(' '));

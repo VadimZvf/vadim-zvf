@@ -4,6 +4,7 @@ uniform vec2 uResolution;
 uniform float uText[1000];
 uniform float uLastCharPosition;
 uniform float uShowCursor;
+uniform float uShowRainbow;
 uniform float time;
 varying vec2 vTextureCoord;
 
@@ -112,6 +113,14 @@ float stripes(vec2 uv) {
     return ramp(mod(rand, 1.5), 0.4, 0.6) * noi;
 }
 
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃       Rainbow effect       ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+vec4 rainbow(vec2 uv) {
+    vec3 color = 0.5 + 0.5 * cos(time / 10.0 + uv.xyx + vec3(0,2,4));
+
+    return uShowRainbow == 1.0 ? vec4(color, 1.0) : vec4(1.0);
+}
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃       Text rendering       ┃
@@ -189,6 +198,8 @@ void main(void) {
     currentPointColor += noise(uv);
     // apply vignette
     currentPointColor *= vignette(uv);
-  
+    // apply rainbow effect
+    currentPointColor *= rainbow(uv);
+
     gl_FragColor = currentPointColor;
 }

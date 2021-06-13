@@ -32,6 +32,18 @@ class Renderer {
     public setContent(lines: string[]) {
         this.webGLRenderer.setLines(lines);
     }
+
+    public enableCursor() {
+        this.webGLRenderer.enableCursor();
+    }
+
+    public disableCursor() {
+        this.webGLRenderer.disableCursor();
+    }
+
+    public toggleRainbowEffect() {
+        this.webGLRenderer.toggleRainbowEffect();
+    }
 }
 
 export default Renderer;

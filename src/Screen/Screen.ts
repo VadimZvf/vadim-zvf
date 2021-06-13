@@ -12,6 +12,8 @@ export default class Screen {
     constructor() {
         this.onType = this.onType.bind(this);
         this.onDelete = this.onDelete.bind(this);
+        this.onFocus = this.onFocus.bind(this);
+        this.onBlur = this.onBlur.bind(this);
         this.onEnter = this.onEnter.bind(this);
 
         this.renderer = new Renderer({
@@ -24,6 +26,8 @@ export default class Screen {
         this.input = new Input();
         this.input.subscribeChangeEvent(this.onType);
         this.input.subscribeBackspaceKeyEvent(this.onDelete);
+        this.input.subscribeFocusEvent(this.onFocus);
+        this.input.subscribeBlurEvent(this.onBlur);
         this.input.subscribeEnterKeyEvent(this.onEnter);
         this.commandListeners = [];
     }
@@ -46,6 +50,10 @@ export default class Screen {
 
         this.checkLinesCount();
         this.updateRenderer();
+    }
+
+    public toggleRainbowEffect() {
+        this.renderer.toggleRainbowEffect();
     }
 
     private onType(text: string) {
@@ -78,6 +86,14 @@ export default class Screen {
         for (const listener of this.commandListeners) {
             listener(command);
         }
+    }
+
+    private onFocus() {
+        this.renderer.enableCursor();
+    }
+
+    private onBlur() {
+        this.renderer.disableCursor();
     }
 
     private checkLinesCount() {

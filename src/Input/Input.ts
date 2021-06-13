@@ -49,6 +49,18 @@ class Input {
             this.textareaNode.value = '';
         });
     }
+
+    public subscribeFocusEvent(listener: () => void) {
+        this.textareaNode.addEventListener('focus', () => {
+            listener();
+        });
+    }
+
+    public subscribeBlurEvent(listener: () => void) {
+        this.textareaNode.addEventListener('blur', () => {
+            listener();
+        });
+    }
 }
 
 export default Input;
