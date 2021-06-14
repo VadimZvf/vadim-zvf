@@ -15,6 +15,7 @@ export default function* (args: string[], system: ISystem): IProgramIterator {
     switch (nextCommands[0]) {
         case 'write':
             openLink('mailto:vadim.zvf@gmail.com');
+            break;
         default:
             system.addContent(['OK :(']);
             break;
