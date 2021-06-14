@@ -106,13 +106,30 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
     for (let index = 0; index < text.length; index++) {
         const symbol = text[index].toLocaleLowerCase();
         const mask = symbolsMapping[symbol] || symbolsMapping.space;
+        // color can contain maximum 255 value(
+        // thats why we should split number to small parts
+        const path1 = (mask & 0b111111000000000000000) >> 15;
+        const path2 = (mask & 0b000000111111000000000) >> 9;
+        const path3 = (mask & 0b000000000000111111000) >> 3;
+        const path4 = mask & 0b000000000000000000111;
+
         masks.push(
-            // color can contain maximum 255 value(
-            // thats why we should split number to small parts
-            (mask & 0b111111000000000000000) >> 15,
-            (mask & 0b000000111111000000000) >> 9,
-            (mask & 0b000000000000111111000) >> 3,
-            mask & 0b000000000000000000111
+            // Scale up resolution by three times
+            // because some browsers has low accuracy for float numbers
+            path1,
+            path2,
+            path3,
+            path4,
+
+            path1,
+            path2,
+            path3,
+            path4,
+
+            path1,
+            path2,
+            path3,
+            path4
         );
     }
 
@@ -120,7 +137,7 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
 
     const tex = new DataTexture(
         data,
-        WebGLRenderer.symbolsPerLine,
+        WebGLRenderer.symbolsPerLine * 3,
         WebGLRenderer.linesCount,
         RGBAFormat
     );
