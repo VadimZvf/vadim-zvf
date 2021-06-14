@@ -9,13 +9,10 @@ import {
     Texture,
     RepeatWrapping,
     Vector2,
-    RGBFormat,
     RGBAFormat,
-    RedFormat,
-    UnsignedByteType,
-    GLSL3,
 } from 'three';
 import glitchImage from '../glitch.png';
+import config from './config';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
@@ -116,6 +113,7 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
         masks.push(
             // Scale up resolution by three times
             // because some browsers has low accuracy for float numbers
+            // and they may incorrectly calculate the point with the symbol in shader
             path1,
             path2,
             path3,
@@ -133,15 +131,12 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
         );
     }
 
-    const data = new Uint8Array(masks);
-
-    const tex = new DataTexture(
-        data,
-        WebGLRenderer.symbolsPerLine * 3,
-        WebGLRenderer.linesCount,
+    return new DataTexture(
+        new Uint8Array(masks),
+        config.symbolsPerLine * 3,
+        config.linesCount,
         RGBAFormat
     );
-    return tex;
 }
 
 interface IParams {
@@ -174,10 +169,6 @@ export class WebGLRenderer {
 
         this.size = params.size;
     }
-
-    static maxSymbolsCount = 972;
-    static symbolsPerLine = 54;
-    static linesCount = 972 / 54;
 
     private size: { width: number; height: number };
     private camera: OrthographicCamera;
@@ -227,21 +218,25 @@ export class WebGLRenderer {
     }
 
     public setLines(lines: string[]) {
-        if (lines.length > WebGLRenderer.linesCount) {
+        if (lines.length > config.linesCount) {
             console.warn(
-                `Too many lines - ${lines.length}. Maximum available - ${WebGLRenderer.linesCount}`
+                `Too many lines - ${lines.length}. Maximum available - ${config.linesCount}`
             );
         }
 
         let text = '';
         let lastSymbolPosition = 0;
 
-        const croupedLines = lines.slice(0, WebGLRenderer.linesCount);
+        const croupedLines = lines.slice(0, config.linesCount);
 
         for (let index = 0; index < croupedLines.length; index++) {
-            let line = lines[index]
-                .slice(0, WebGLRenderer.symbolsPerLine)
-                .padEnd(WebGLRenderer.symbolsPerLine, ' ');
+            let line = lines[index].padEnd(config.symbolsPerLine, ' ');
+
+            if (line.length > config.symbolsPerLine) {
+                console.warn(
+                    `Too many symbols - ${line.length}. Line can contain maximum - ${config.symbolsPerLine}`
+                );
+            }
 
             text += line;
 
@@ -255,7 +250,7 @@ export class WebGLRenderer {
             }
         }
 
-        const allScreen = text.padEnd(WebGLRenderer.maxSymbolsCount, ' ');
+        const allScreen = text.padEnd(config.maxSymbolsCount, ' ');
 
         this.material.uniforms.uTextTexture.value =
             mapTextToBitMasksArray(allScreen);

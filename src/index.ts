@@ -1,4 +1,6 @@
 import Screen from './Screen';
+import Renderer from './Renderer';
+import Input from './Input';
 import './index.css';
 
 function openLink(url: string) {
@@ -9,7 +11,10 @@ function openLink(url: string) {
 }
 
 function init() {
-    const screen = new Screen();
+    const screen = new Screen(
+        new Renderer({ size: { width: 896, height: 704 } }),
+        new Input()
+    );
 
     screen.subscribeCommand((command: string) => {
         switch (command) {
@@ -69,7 +74,6 @@ function init() {
                     '█░ █    █ ░█',
                     '█░░ ████ ░░█',
                     '█  █    █  █',
-                    '█          █',
                     '█          █     ██',
                     '█  █    █  █    █  █',
                     '█ █ █  █ █ █    █   █',
@@ -78,17 +82,16 @@ function init() {
                     '  █      █     █   █ █',
                     '   ██████   ██  █  █ █',
                     '    █      █    ███  █',
+                    '    █      █    ██   █',
                     '   ███     █    █   █',
                     '  █       █     ████',
                     '   █████████████',
-                    '',
                 ]);
                 break;
             case 'show me dog':
                 screen.addContent([
                     ' ███     ███',
                     '█░░░█████░░░█',
-                    '█░░█     █░░█',
                     '█░██  ░░░██░█',
                     ' █ █ █░█░█ █',
                     '   █  ░░░█',
@@ -111,7 +114,14 @@ function init() {
                 screen.toggleRainbowEffect();
                 break;
             case 'clear':
-                screen.addContent(Array(18).fill(' '));
+                screen.addContent(Array(17).fill(' '));
+                break;
+            case 'wow':
+                screen.addContent([
+                    'Write a command to open my social Write a command to open my socialWrite a command to open my socialWrite a command to open my socialWrite a command to open my social:',
+                    '12',
+                    '11',
+                ]);
                 break;
             default:
                 break;

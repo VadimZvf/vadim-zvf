@@ -1,6 +1,19 @@
-import Renderer from '../Renderer';
-import WebGLRenderer from '../Renderer/WebGLRenderer';
-import Input from '../Input';
+import rendererConfig from '../Renderer/config';
+
+export interface IRenderer {
+    setContent(lines: string[]): void;
+    enableCursor(): void;
+    disableCursor(): void;
+    toggleRainbowEffect(): void;
+}
+
+export interface IInput {
+    subscribeChangeEvent(listener: (text: string) => void): void;
+    subscribeBackspaceKeyEvent(listener: () => void): void;
+    subscribeEnterKeyEvent(listener: () => void): void;
+    subscribeFocusEvent(listener: () => void): void;
+    subscribeBlurEvent(listener: () => void): void;
+}
 
 /**
  * Class that contain all interface logic
@@ -9,21 +22,16 @@ import Input from '../Input';
  * - trigger commands
  */
 export default class Screen {
-    constructor() {
+    constructor(renderer: IRenderer, input: IInput) {
         this.onType = this.onType.bind(this);
         this.onDelete = this.onDelete.bind(this);
         this.onFocus = this.onFocus.bind(this);
         this.onBlur = this.onBlur.bind(this);
         this.onEnter = this.onEnter.bind(this);
 
-        this.renderer = new Renderer({
-            size: {
-                width: 896,
-                height: 704,
-            },
-        });
+        this.renderer = renderer;
 
-        this.input = new Input();
+        this.input = input;
         this.input.subscribeChangeEvent(this.onType);
         this.input.subscribeBackspaceKeyEvent(this.onDelete);
         this.input.subscribeFocusEvent(this.onFocus);
@@ -32,8 +40,8 @@ export default class Screen {
         this.commandListeners = [];
     }
 
-    private renderer: Renderer;
-    private input: Input;
+    private renderer: IRenderer;
+    private input: IInput;
     private commandListeners: Array<(command: string) => void>;
 
     // Screen text contet
@@ -46,7 +54,22 @@ export default class Screen {
     }
 
     public addContent(lines: string[]) {
-        this.content = this.content.concat(lines);
+        const newLines = [];
+
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index];
+
+            // Crop long lines into parts
+            if (line.length > rendererConfig.symbolsPerLine) {
+                newLines.push(line.slice(0, rendererConfig.symbolsPerLine));
+                lines[index] = line.slice(rendererConfig.symbolsPerLine);
+                index--;
+            } else {
+                newLines.push(line);
+            }
+        }
+
+        this.content = this.content.concat(newLines);
 
         this.checkLinesCount();
         this.updateRenderer();
@@ -57,7 +80,11 @@ export default class Screen {
     }
 
     private onType(text: string) {
-        if (this.typedText.length < WebGLRenderer.symbolsPerLine) {
+        if (
+            // +1 so that the cursor does not run to a new line
+            this.typedText.length + text.length + 1 <=
+            rendererConfig.symbolsPerLine
+        ) {
             this.typedText += text;
 
             this.checkLinesCount();
@@ -97,21 +124,11 @@ export default class Screen {
     }
 
     private checkLinesCount() {
-        if (this.typedText.length > 1) {
-            // If typed text is not empty, we shoult remove one more line
-            // because we wonna show typed line
-            if (this.content.length >= WebGLRenderer.linesCount) {
-                this.content = this.content.slice(
-                    this.content.length - WebGLRenderer.linesCount + 1
-                );
-            }
-
-            return;
-        }
-
-        if (this.content.length > WebGLRenderer.linesCount) {
+        // If typed text is not empty, we shoult remove one more line
+        // because we wonna show typed line
+        if (this.content.length >= rendererConfig.linesCount) {
             this.content = this.content.slice(
-                this.content.length - WebGLRenderer.linesCount
+                this.content.length - rendererConfig.linesCount + 1
             );
         }
     }
