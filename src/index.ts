@@ -23,7 +23,7 @@ function init() {
                     '- rainbow',
                     '- source code',
                     '- help',
-                    '- clean',
+                    '- clear',
                 ]);
                 break;
             case 'contacts':
@@ -110,7 +110,7 @@ function init() {
             case 'rainbow':
                 screen.toggleRainbowEffect();
                 break;
-            case 'clean':
+            case 'clear':
                 screen.addContent(Array(18).fill(' '));
                 break;
             default:

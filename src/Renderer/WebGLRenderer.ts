@@ -4,16 +4,20 @@ import {
     WebGLRenderer as ThreeJSRenderer,
     PlaneGeometry,
     ShaderMaterial,
+    DataTexture,
     Mesh,
     Texture,
     RepeatWrapping,
     Vector2,
+    RGBFormat,
+    RGBAFormat,
+    RedFormat,
+    UnsignedByteType,
+    GLSL3,
 } from 'three';
 import glitchImage from '../glitch.png';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
-import getCharGLSL1 from './get_char_by_index_gl1.frag';
-import getCharGLSL2 from './get_char_by_index_gl2.frag';
 
 const userAgent = navigator.userAgent.toLowerCase();
 const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
@@ -44,65 +48,83 @@ const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
  * 712557
  */
 const symbolsMapping: Record<string, number> = {
-    space: 0.0,
-    a: 712557.0,
-    b: 1760622.0,
-    c: 706858.0,
-    d: 1760110.0,
-    e: 2018607.0,
-    f: 2018596.0,
-    g: 708458.0,
-    h: 1498989.0,
-    i: 1909911.0,
-    j: 1872746.0,
-    k: 1498477.0,
-    l: 1198375.0,
-    m: 1571693.0,
-    n: 1760109.0,
-    o: 711530.0,
-    p: 711972.0,
-    q: 711675.0,
-    r: 1760621.0,
-    s: 2018927.0,
-    t: 1909906.0,
-    u: 1497963.0,
-    v: 1497938.0,
-    w: 1498109.0,
-    x: 1496429.0,
-    y: 1496210.0,
-    z: 2004271.0,
-    1: 730263.0,
-    2: 693543.0,
-    3: 693354.0,
-    4: 1496649.0,
-    5: 1985614.0,
-    6: 707946.0,
-    7: 1873042.0,
-    8: 709994.0,
-    9: 710250.0,
-    0: 711530.0,
-    '!': 1198116.0,
-    '.': 2.0,
-    ',': 36.0,
-    '"': 1474560.0,
-    '-': 3584.0,
-    '█': 2097151.0,
-    '░': 1398101.0,
-    ':': 73872.0,
-    '@': 708586.0, // T_T how to show this symbol?(((
-    '>': 139936.0,
+    space: 0,
+    a: 712557,
+    b: 1760622,
+    c: 706858,
+    d: 1760110,
+    e: 2018607,
+    f: 2018596,
+    g: 708458,
+    h: 1498989,
+    i: 1909911,
+    j: 1872746,
+    k: 1498477,
+    l: 1198375,
+    m: 1571693,
+    n: 1760109,
+    o: 711530,
+    p: 711972,
+    q: 711675,
+    r: 1760621,
+    s: 2018927,
+    t: 1909906,
+    u: 1497963,
+    v: 1497938,
+    w: 1498109,
+    x: 1496429,
+    y: 1496210,
+    z: 2004271,
+    1: 730263,
+    2: 693543,
+    3: 693354,
+    4: 1496649,
+    5: 1985614,
+    6: 707946,
+    7: 1873042,
+    8: 709994,
+    9: 710250,
+    0: 711530,
+    '!': 1198116,
+    '.': 2,
+    ',': 36,
+    '"': 1474560,
+    '-': 3584,
+    '█': 2097151,
+    '░': 1398101,
+    ':': 73872,
+    '@': 708586, // T_T how to show this symbol?(((
+    '>': 139936,
 };
 
-function mapTextToBitMasksArray(text: string = ''): Float32Array {
+/// OMG OMG!!
+// We send text data to shader as Texture!
+// because text is so long, and not all browsers allow use such long Arrays in shader
+function mapTextToBitMasksArray(text: string = ''): DataTexture {
     const masks = [];
 
     for (let index = 0; index < text.length; index++) {
         const symbol = text[index].toLocaleLowerCase();
         const mask = symbolsMapping[symbol] || symbolsMapping.space;
-        masks.push(mask);
+        masks.push(
+            // color can contain maximum 255 value(
+            // thats why we should split number to small parts
+            (mask & 0b111111000000000000000) >> 15,
+            (mask & 0b000000111111000000000) >> 9,
+            (mask & 0b000000000000111111000) >> 3,
+            mask & 0b000000000000000000111
+        );
     }
 
-    return new Float32Array(masks);
+    const data = new Uint8Array(masks);
+
+    const tex = new DataTexture(
+        data,
+        WebGLRenderer.symbolsPerLine,
+        WebGLRenderer.linesCount,
+        RGBAFormat
+    );
+    return tex;
 }
 
 interface IParams {
@@ -129,10 +151,8 @@ export class WebGLRenderer {
         this.camera.position.z = 1;
 
         this.renderer = new ThreeJSRenderer({
-            antialias: true,
             canvas: canvas,
         });
-        this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(params.size.width, params.size.height);
 
         this.size = params.size;
@@ -148,11 +168,9 @@ export class WebGLRenderer {
     private renderer: ThreeJSRenderer;
     private material: ShaderMaterial;
     private glitchTexture: Texture;
-    private uText = '';
 
     private vertexShader = vertexShader;
-    private fragmentShader =
-        fragmentShader + (isSafari ? getCharGLSL1 : getCharGLSL2);
+    private fragmentShader = fragmentShader;
 
     public render() {
         this.material.uniforms.time.value =
@@ -164,7 +182,7 @@ export class WebGLRenderer {
         this.glitchTexture = new Texture();
         this.glitchTexture.wrapS = RepeatWrapping;
         this.glitchTexture.wrapT = RepeatWrapping;
-        console.log(this.fragmentShader);
+
         const geometry = new PlaneGeometry(this.size.width, this.size.height);
         this.material = new ShaderMaterial({
             uniforms: {
@@ -172,8 +190,8 @@ export class WebGLRenderer {
                 uResolution: {
                     value: new Vector2(this.size.width, this.size.height),
                 },
-                uText: { value: mapTextToBitMasksArray(this.uText) },
-                uLastCharPosition: { value: this.uText.length },
+                uTextTexture: { value: mapTextToBitMasksArray('') },
+                uLastCharPosition: { value: 0 },
                 uShowCursor: { value: 0 },
                 uShowRainbow: { value: 0 },
                 time: { value: 0 },
@@ -220,8 +238,10 @@ export class WebGLRenderer {
             }
         }
 
-        this.uText = text;
-        this.material.uniforms.uText.value = mapTextToBitMasksArray(this.uText);
+        const allScreen = text.padEnd(WebGLRenderer.maxSymbolsCount, ' ');
+
+        this.material.uniforms.uTextTexture.value =
+            mapTextToBitMasksArray(allScreen);
         this.material.uniforms.uLastCharPosition.value = lastSymbolPosition;
     }
 

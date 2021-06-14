@@ -84,7 +84,7 @@ export default class Screen {
         this.updateRenderer();
 
         for (const listener of this.commandListeners) {
-            listener(command);
+            listener(command.toLocaleLowerCase());
         }
     }
 

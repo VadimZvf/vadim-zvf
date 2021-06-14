@@ -1,12 +1,14 @@
 precision mediump float;
 uniform sampler2D uGlitch;
+uniform sampler2D uTextTexture;
 uniform vec2 uResolution;
-uniform float uText[973];
 uniform float uLastCharPosition;
 uniform float uShowCursor;
 uniform float uShowRainbow;
 uniform float time;
 varying vec2 vTextureCoord;
+
+precision highp float;
 
 // Size of bit map character
 #define CHAR_SIZE vec2(3, 7)
@@ -15,9 +17,6 @@ varying vec2 vTextureCoord;
 // Padding for text container, for both sides. Should be a multiple of CHAR_SPACING
 #define PADDING vec2(70.0, 64.0)
 #define ZOOM 0.34
-
-// Define function that will be added by browser specific
-float getCharId(int index);
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃
@@ -139,14 +138,28 @@ float sprite(float spr, vec2 size, vec2 uv) {
     float bit = (size.x - uv.x - 1.0) + uv.y * size.x;
     
     // Clipping bound to remove garbage outside the sprite's boundaries.
-    bool bounds = all(greaterThanEqual(uv, vec2(0, 0))) && all(lessThan(uv, size));
-    
+    bool bounds = all(greaterThanEqual(uv, vec2(0.0, 0.0)));
+    bounds = bounds && all(lessThan(uv, size));
+
     return bounds ? extract_bit(spr, bit) : 0.0;
 }
 
 // Prints a character.
 float char(float ch, vec2 uv, vec2 cursor) {
     return sprite(ch, CHAR_SIZE, floor(ZOOM * (uv - cursor)));
+}
+
+float getCharMask(float index) {
+    float line = floor(index / 54.0);
+    float symbol = index - line * 54.0;
+    vec4 textureData = texture2D(uTextTexture, vec2(symbol / 54.0, line / 18.0)) * 255.0;
+
+    return (
+        textureData.x * 32768.0 +
+        textureData.y * 512.0 +
+        textureData.z * 8.0 +
+        textureData.w
+    );
 }
 
 vec4 getText(vec2 uv) {
@@ -160,29 +173,29 @@ vec4 getText(vec2 uv) {
             (uResolution.y - PADDING.y - currentCoord.y) / CHAR_SPACING.y
         )
     );
+ 
+    if (currentCoord.y >= PADDING.y && currentCoord.y < uResolution.y - PADDING.y && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
+        // Count of symbols on current line 
+        float numCharsRow = floor((uResolution.x - PADDING.x * 2.0) / CHAR_SPACING.x);
 
-    // Count of symbols on current line 
-    float numCharsRow = floor((uResolution.x - PADDING.x * 2.0) / CHAR_SPACING.x);
-    // Calculate how match 
-    float charIndex = bucket.y * numCharsRow + bucket.x;
+        // Calculate how match 
+        float charIndex = bucket.y * numCharsRow + bucket.x;
+ 
+        float charMask = getCharMask(charIndex);
 
-    // Look "getCharId" method in "./get_char_by_index_gl2.frag" or "get_char_by_index_gl1.frag"
-    float charId = getCharId(int(charIndex));
-
-    if (bucket.y >= 0.0 && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
         // Calculate current point position inside grid
         vec2 cursor = floor(currentCoord / CHAR_SPACING) * CHAR_SPACING;
         // Render char
-        vec4 charColor = vec4(1.0, 1.0, 1.0, 0.0) * char(charId, currentCoord, cursor);
+        vec4 charColor = vec4(1.0, 1.0, 1.0, 1.0) * char(charMask, currentCoord, cursor);
 
         // Render cursor
         float isLastChar = 1.0 - step(0.5, abs(uLastCharPosition - charIndex));
-        charColor += vec4(1.0, 1.0, 1.0, 0.0) * uShowCursor * isLastChar * sin(time / 6.0);
+        charColor += vec4(1.0, 1.0, 1.0, 1.0) * uShowCursor * isLastChar * sin(time / 6.0);
 
         return charColor;
     }
 
-    return vec4(0.0);
+    return vec4(0.0, 0.0, 0.0, 1.0);
 }
 
 void main(void) {

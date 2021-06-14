@@ -2,9 +2,11 @@ class Input {
     constructor() {
         this.textareaNode = document.createElement('textarea');
         this.textareaNode.style.position = 'absolute';
-        this.textareaNode.style.top = '-999px';
+        this.textareaNode.style.top = '50%';
         this.textareaNode.style.left = '-999px';
         this.textareaNode.style.zIndex = '-9999';
+        this.textareaNode.style.fontSize = '99px';
+        this.textareaNode.style.opacity = '0';
 
         document.body.appendChild(this.textareaNode);
 
