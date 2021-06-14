@@ -75,6 +75,12 @@ export default class Screen {
         this.updateRenderer();
     }
 
+    public clear() {
+        this.content = Array(17).fill(' ');
+        this.checkLinesCount();
+        this.updateRenderer();
+    }
+
     public toggleRainbowEffect() {
         this.renderer.toggleRainbowEffect();
     }

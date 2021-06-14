@@ -90,6 +90,8 @@ const symbolsMapping: Record<string, number> = {
     '█': 2097151,
     '░': 1398101,
     ':': 73872,
+    '(': 346385,
+    ')': 1118804,
     '@': 708586, // T_T how to show this symbol?(((
     '>': 139936,
 };
