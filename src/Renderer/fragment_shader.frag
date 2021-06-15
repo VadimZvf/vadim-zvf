@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 uniform sampler2D uGlitch;
 uniform sampler2D uTextTexture;
 uniform vec2 uResolution;
@@ -8,15 +8,13 @@ uniform float uShowRainbow;
 uniform float time;
 varying vec2 vTextureCoord;
 
-precision highp float;
-
 // Size of bit map character
 #define CHAR_SIZE vec2(3, 7)
 // Size of box with symbol
 #define CHAR_SPACING vec2(14, 32)
 // Padding for text container, for both sides. Should be a multiple of CHAR_SPACING
 #define PADDING vec2(70.0, 64.0)
-#define ZOOM 0.34
+#define ZOOM 0.33
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃
@@ -150,9 +148,7 @@ float char(float ch, vec2 uv, vec2 cursor) {
 }
 
 float getCharMask(float index) {
-    float line = floor(index / 54.0);
-    float symbol = index - line * 54.0;
-    vec4 textureData = texture2D(uTextTexture, vec2(symbol / 54.0, line / 18.0)) * 255.0;
+    vec4 textureData = texture2D(uTextTexture, vec2(index / 973.0, 0.0)) * 255.0;
 
     return (
         textureData.x * 32768.0 +
@@ -165,17 +161,17 @@ float getCharMask(float index) {
 vec4 getText(vec2 uv) {
     // Coords is value betwean 0 and 1, here we transform this value to real coords 1,2,3,4....
     vec2 currentCoord = uv * uResolution;
-
-    // Calculate how match symbols was before current point
-    vec2 bucket = floor(
-        vec2(
-            (currentCoord.x - PADDING.x) / CHAR_SPACING.x,
-            (uResolution.y - PADDING.y - currentCoord.y) / CHAR_SPACING.y
-        )
-    );
  
-    if (currentCoord.y >= PADDING.y && currentCoord.y < uResolution.y - PADDING.y && currentCoord.x >= PADDING.x && currentCoord.x <= uResolution.x - PADDING.x) {
-        // Count of symbols on current line 
+    if (currentCoord.y > PADDING.y && currentCoord.y < uResolution.y - PADDING.y && currentCoord.x > PADDING.x && currentCoord.x < uResolution.x - PADDING.x) {
+        // Calculate how match symbols was before current point
+        vec2 bucket = floor(
+            vec2(
+                (currentCoord.x - PADDING.x) / CHAR_SPACING.x,
+                (uResolution.y - PADDING.y - currentCoord.y) / CHAR_SPACING.y
+            )
+        );
+
+        // Count of symbols on line 
         float numCharsRow = floor((uResolution.x - PADDING.x * 2.0) / CHAR_SPACING.x);
 
         // Calculate how match 

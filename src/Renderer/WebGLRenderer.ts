@@ -100,7 +100,7 @@ const symbolsMapping: Record<string, number> = {
 // We send text data to shader as Texture!
 // because text is so long, and not all browsers allow use such long Arrays in shader
 function mapTextToBitMasksArray(text: string = ''): DataTexture {
-    const masks = [];
+    const masks: number[] = [];
 
     for (let index = 0; index < text.length; index++) {
         const symbol = text[index].toLocaleLowerCase();
@@ -113,30 +113,20 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
         const path4 = mask & 0b000000000000000000111;
 
         masks.push(
-            // Scale up resolution by three times
-            // because some browsers has low accuracy for float numbers
-            // and they may incorrectly calculate the point with the symbol in shader
-            path1,
-            path2,
-            path3,
-            path4,
-
-            path1,
-            path2,
-            path3,
-            path4,
-
             path1,
             path2,
             path3,
             path4
-        );
+        ); 
     }
+
+    // Fix float value rounting in GLSL(
+    masks.push(0, 0, 0, 0); 
 
     return new DataTexture(
         new Uint8Array(masks),
-        config.symbolsPerLine * 3,
-        config.linesCount,
+        config.maxSymbolsCount + 1,
+        1,
         RGBAFormat
     );
 }
