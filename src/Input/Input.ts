@@ -22,12 +22,12 @@ class Input {
     }
 
     public subscribeChangeEvent(listener: (text: string) => void) {
-        this.textareaNode.addEventListener('keyup', (event) => {
+        this.textareaNode.addEventListener('keydown', (event) => {
             if (
                 event.currentTarget instanceof HTMLTextAreaElement &&
-                event.keyCode !== 13
+                event.key.length === 1
             ) {
-                listener(event.currentTarget.value);
+                listener(event.key);
 
                 this.textareaNode.value = '';
             }
@@ -35,7 +35,7 @@ class Input {
     }
 
     public subscribeBackspaceKeyEvent(listener: () => void) {
-        this.textareaNode.addEventListener('keyup', (event) => {
+        this.textareaNode.addEventListener('keydown', (event) => {
             if (event.keyCode === 8) {
                 listener();
             }
