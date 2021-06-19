@@ -8,6 +8,7 @@ import showMe from './OS/programms/show_me';
 import clear from './OS/programms/clear';
 import rainbow from './OS/programms/rainbow';
 import greeting from './OS/programms/greeting';
+import race from './OS/programms/race';
 import Renderer from './Renderer';
 import Input from './Input';
 import './index.css';
@@ -21,6 +22,7 @@ const programs = [
     clear,
     rainbow,
     greeting,
+    race,
 ];
 
 function init() {
