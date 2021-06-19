@@ -1,18 +1,10 @@
-import socials from './programms/socials';
-import help from './programms/help';
-import contacts from './programms/contacts';
-import sourceCode from './programms/source_code';
-import showMe from './programms/show_me';
-import clear from './programms/clear';
-import rainbow from './programms/rainbow';
-import greeting from './programms/greeting';
 import {
     IProgram,
     IProgramDefinition,
     IProgramIterator,
 } from './createProgram';
 
-interface IScreen {
+export interface IScreen {
     subscribeCommand(listener: (command: string) => void): void;
     toggleRainbowEffect(): void;
     addContent(lines: string[]): void;
@@ -32,21 +24,12 @@ export interface ISystem {
 }
 
 export default class OS {
-    constructor(screen: IScreen) {
+    constructor(screen: IScreen, propgrams: IProgramDefinition[]) {
         this.handleCommand = this.handleCommand.bind(this);
 
         this.screen = screen;
         this.system = this.createSystem();
-        this.loadProgramms([
-            socials,
-            help,
-            contacts,
-            sourceCode,
-            showMe,
-            clear,
-            rainbow,
-            greeting,
-        ]);
+        this.loadProgramms(propgrams);
 
         screen.subscribeCommand(this.handleCommand);
     }
