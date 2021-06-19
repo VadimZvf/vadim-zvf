@@ -1,8 +1,6 @@
-import { ISystem, IProgramIterator } from '../OS';
+import createProgram from '../createProgram';
 
-export const name = 'greeting';
-
-export default function* (args: string[], system: ISystem): IProgramIterator {
+export default createProgram('greeting', function* (args, system) {
     system.addContent([
         'HELLO!',
         'Nice to meat U!',
@@ -11,4 +9,4 @@ export default function* (args: string[], system: ISystem): IProgramIterator {
         'If U need a help, just write command - help',
         '',
     ]);
-}
+});

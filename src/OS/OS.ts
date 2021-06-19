@@ -1,26 +1,32 @@
-import socials, { name as socialsName } from './programms/socials';
-import help, { name as helpName } from './programms/help';
-import contacts, { name as contactsName } from './programms/contacts';
-import sourceCode, { name as sourceCodeName } from './programms/source_code';
-import showMe, { name as showMeName } from './programms/show_me';
-import clear, { name as clearName } from './programms/clear';
-import rainbow, { name as rainbowName } from './programms/rainbow';
-import greeting, { name as greetingName } from './programms/greeting';
-
-export type IProgramIterator = Iterator<void, void, string[]>;
-
-export type IProgram = (args: string[], system: ISystem) => IProgramIterator;
+import socials from './programms/socials';
+import help from './programms/help';
+import contacts from './programms/contacts';
+import sourceCode from './programms/source_code';
+import showMe from './programms/show_me';
+import clear from './programms/clear';
+import rainbow from './programms/rainbow';
+import greeting from './programms/greeting';
+import {
+    IProgram,
+    IProgramDefinition,
+    IProgramIterator,
+} from './createProgram';
 
 interface IScreen {
     subscribeCommand(listener: (command: string) => void): void;
     toggleRainbowEffect(): void;
     addContent(lines: string[]): void;
+    resetInputArrow(): void;
+    setInputArrow(arrow: string): void;
     clear(): void;
 }
 
+// Interface for programs
 export interface ISystem {
-    screen: IScreen;
     addContent(lines: string[]): void;
+    requestText(data: IRequestText): IRequestTextFiber;
+    toggleRainbowEffect(): void;
+    clear(): void;
     lockInput(): void;
     unlockInput(): void;
 }
@@ -30,18 +36,17 @@ export default class OS {
         this.handleCommand = this.handleCommand.bind(this);
 
         this.screen = screen;
-        this.programms = {
-            [socialsName]: socials,
-            [helpName]: help,
-            [contactsName]: contacts,
-            [sourceCodeName]: sourceCode,
-            [showMeName]: showMe,
-            [rainbowName]: rainbow,
-            [clearName]: clear,
-            [greetingName]: greeting,
-        };
-        this.programmInProgress = null;
         this.system = this.createSystem();
+        this.loadProgramms([
+            socials,
+            help,
+            contacts,
+            sourceCode,
+            showMe,
+            clear,
+            rainbow,
+            greeting,
+        ]);
 
         screen.subscribeCommand(this.handleCommand);
     }
@@ -50,15 +55,26 @@ export default class OS {
     system: ISystem;
     programms: {
         [programmsName: string]: IProgram;
-    };
-    programmInProgress: IProgramIterator | null;
+    } = {};
+    programmInProgress: IProgramIterator | void;
+    systemApiInProgress: string | null = null;
 
     public runProgramm(name: string, args: string[]) {
         this.runProgram(name, args);
     }
 
+    private loadProgramms(programs: IProgramDefinition[]) {
+        for (const programInfo of programs) {
+            this.programms[programInfo.name] = programInfo.program;
+        }
+    }
+
     private handleCommand(rawCommand: string = '') {
         const units = rawCommand.split(' ');
+
+        if (this.systemApiInProgress) {
+            this.performSystemApi();
+        }
 
         if (this.programmInProgress) {
             this.performCurrentProgram(units);
@@ -78,18 +94,62 @@ export default class OS {
     }
 
     private performCurrentProgram(units: string[]) {
+        if (!this.programmInProgress) {
+            return;
+        }
+
         const result = this.programmInProgress.next(units);
 
         if (result.done) {
             this.programmInProgress = null;
+            return;
         }
+
+        if (result.value) {
+            this.applySystemAPI(result.value);
+        }
+    }
+
+    // TODO: reafactor
+    private applySystemAPI(request: IRequestTextFiber) {
+        if (!request) {
+            return;
+        }
+
+        switch (request.type) {
+            case SYSTEM_INTERFACE_REQUESTS.text:
+                this.systemApiInProgress = SYSTEM_INTERFACE_REQUESTS.text;
+                if (request.data && request.data.arrowText) {
+                    this.screen.setInputArrow(request.data.arrowText);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private performSystemApi() {
+        switch (this.systemApiInProgress) {
+            case SYSTEM_INTERFACE_REQUESTS.text:
+                this.screen.resetInputArrow();
+                break;
+            default:
+                break;
+        }
+
+        this.systemApiInProgress = null;
     }
 
     private createSystem(): ISystem {
         return {
-            screen: this.screen,
-            addContent: (lines: string[]) => {
-                this.screen.addContent(lines);
+            addContent: (lines) => this.screen.addContent(lines),
+            toggleRainbowEffect: () => this.screen.toggleRainbowEffect(),
+            clear: () => this.screen.clear(),
+            requestText: (data: IRequestText): IRequestTextFiber => {
+                return {
+                    type: SYSTEM_INTERFACE_REQUESTS.text,
+                    data,
+                };
             },
             lockInput() {
                 throw new Error('Not implemented');
@@ -100,3 +160,17 @@ export default class OS {
         };
     }
 }
+
+// TODO: Move to separate entity
+interface IRequestText {
+    arrowText: string;
+}
+
+export interface IRequestTextFiber {
+    type: string;
+    data: IRequestText | void;
+}
+
+const SYSTEM_INTERFACE_REQUESTS = {
+    text: 'REQUEST_STRING',
+};

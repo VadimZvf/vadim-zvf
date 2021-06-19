@@ -1,7 +1,6 @@
-import { ISystem, IProgramIterator } from '../OS';
+import { ISystem } from '../OS';
+import createProgram from '../createProgram';
 import openLink from '../utils/open_link';
-
-export const name = 'socials';
 
 function openSocialLink(name: string, system: ISystem) {
     switch (name) {
@@ -24,7 +23,7 @@ function openSocialLink(name: string, system: ISystem) {
     }
 }
 
-export default function* (args: string[], system: ISystem): IProgramIterator {
+export default createProgram('socials', function* (args, system) {
     const [socialName] = args;
 
     if (socialName) {
@@ -41,6 +40,8 @@ export default function* (args: string[], system: ISystem): IProgramIterator {
         ]);
     }
 
-    const nextCommands: string[] = yield;
+    const nextCommands: string[] = yield system.requestText({
+        arrowText: 'social:',
+    });
     openSocialLink(nextCommands[0], system);
-}
+});

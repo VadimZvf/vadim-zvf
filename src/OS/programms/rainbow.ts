@@ -1,7 +1,5 @@
-import { ISystem, IProgramIterator } from '../OS';
+import createProgram from '../createProgram';
 
-export const name = 'rainbow';
-
-export default function* (args: string[], system: ISystem): IProgramIterator {
-    system.screen.toggleRainbowEffect();
-}
+export default createProgram('rainbow', function* (args, system) {
+    system.toggleRainbowEffect();
+});

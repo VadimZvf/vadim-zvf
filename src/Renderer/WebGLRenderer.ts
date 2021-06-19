@@ -94,6 +94,8 @@ const symbolsMapping: Record<string, number> = {
     ')': 1118804,
     '@': 708586, // T_T how to show this symbol?(((
     '>': 139936,
+    '?': 693378,
+    '/': 304292,
 };
 
 /// OMG OMG!!
@@ -112,16 +114,11 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
         const path3 = (mask & 0b000000000000111111000) >> 3;
         const path4 = mask & 0b000000000000000000111;
 
-        masks.push(
-            path1,
-            path2,
-            path3,
-            path4
-        ); 
+        masks.push(path1, path2, path3, path4);
     }
 
     // Fix float value rounting in GLSL(
-    masks.push(0, 0, 0, 0); 
+    masks.push(0, 0, 0, 0);
 
     return new DataTexture(
         new Uint8Array(masks),

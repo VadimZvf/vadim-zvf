@@ -1,8 +1,6 @@
-import { ISystem, IProgramIterator } from '../OS';
+import cleateProgram from '../createProgram';
 import openLink from '../utils/open_link';
 
-export const name = 'source-code';
-
-export default function* (args: string[], system: ISystem): IProgramIterator {
+export default cleateProgram('source-code', function* (args, system) {
     openLink('https://github.com/VadimZvf/vadim-zvf');
-}
+});

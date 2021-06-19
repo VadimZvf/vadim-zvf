@@ -1,23 +1,20 @@
-import { ISystem, IProgramIterator } from '../OS';
+import createProgram from '../createProgram';
 import openLink from '../utils/open_link';
 
-export const name = 'contacts';
-
-export default function* (args: string[], system: ISystem): IProgramIterator {
+export default createProgram('contacts', function* (args, system) {
     system.addContent([
         'email: vadim.zvf@gmail.com',
         '',
-        'If U wanna write me, type: "write"',
+        'Do you want to write to me?',
     ]);
 
-    const nextCommands: string[] = yield;
+    const nextCommands: string[] = yield system.requestText({
+        arrowText: 'Yes or no (Y/N):',
+    });
 
-    switch (nextCommands[0]) {
-        case 'write':
-            openLink('mailto:vadim.zvf@gmail.com');
-            break;
-        default:
-            system.addContent(['OK :(']);
-            break;
+    if (['Y', 'y', 'Yes', 'yes'].includes(nextCommands[0])) {
+        openLink('mailto:vadim.zvf@gmail.com');
+    } else {
+        system.addContent(['OK :(']);
     }
-}
+});

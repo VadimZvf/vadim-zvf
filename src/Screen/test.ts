@@ -151,6 +151,52 @@ test('Should able delete typed text', () => {
     expect(fakeSetContent).toHaveBeenLastCalledWith(['>']);
 });
 
+test('Should able set custom input arrow', () => {
+    const fakeSetContent = jest.fn();
+    let addText = (text: string) => {};
+    let deleteText = () => {};
+
+    const screen = new Screen(
+        {
+            ...fakeRenderer,
+            setContent: fakeSetContent,
+        },
+        {
+            ...fakeInput,
+            subscribeChangeEvent: (cb) => {
+                addText = cb;
+            },
+            subscribeBackspaceKeyEvent: (cb) => {
+                deleteText = cb;
+            },
+        }
+    );
+
+    screen.addContent(['Some default text']);
+    addText('pwd');
+    screen.setInputArrow('aRRRow:');
+
+    expect(fakeSetContent).toHaveBeenLastCalledWith([
+        'Some default text',
+        'aRRRow:pwd',
+    ]);
+
+    deleteText();
+    deleteText();
+    deleteText();
+    deleteText();
+    deleteText();
+
+    expect(fakeSetContent).toHaveBeenLastCalledWith([
+        'Some default text',
+        'aRRRow:',
+    ]);
+
+    screen.resetInputArrow();
+
+    expect(fakeSetContent).toHaveBeenLastCalledWith(['Some default text', '>']);
+});
+
 test('Should run command', () => {
     const fakeSetContent = jest.fn();
     const onRunCommand = jest.fn();

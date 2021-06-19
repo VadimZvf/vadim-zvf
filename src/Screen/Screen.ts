@@ -44,10 +44,14 @@ export default class Screen {
     private input: IInput;
     private commandListeners: Array<(command: string) => void>;
 
+    private static defaultInputArrow = '>';
+
     // Screen text contet
     private content: string[] = [];
     // Text that user is typing
-    private typedText: string = '>';
+    private typedText: string = '';
+    // Some symbol, or text before typed text
+    private inputArrow: string = Screen.defaultInputArrow;
 
     public subscribeCommand(listener: (command: string) => void) {
         this.commandListeners.push(listener);
@@ -75,6 +79,18 @@ export default class Screen {
         this.updateRenderer();
     }
 
+    public setInputArrow(newArrow: string) {
+        this.inputArrow = newArrow;
+        this.updateRenderer();
+    }
+
+    public resetInputArrow() {
+        if (this.inputArrow !== Screen.defaultInputArrow) {
+            this.inputArrow = Screen.defaultInputArrow;
+            this.updateRenderer();
+        }
+    }
+
     public clear() {
         this.content = Array(17).fill(' ');
         this.checkLinesCount();
@@ -99,8 +115,7 @@ export default class Screen {
     }
 
     private onDelete() {
-        // Save input symbol
-        if (this.typedText !== '>') {
+        if (this.typedText.length > 0) {
             this.typedText = this.typedText.substring(
                 0,
                 this.typedText.length - 1
@@ -111,13 +126,12 @@ export default class Screen {
     }
 
     private onEnter() {
-        // Remove ">" from command
-        const command = this.typedText.substring(1);
-        this.typedText = '>';
+        const _typedText = this.typedText;
+        this.typedText = '';
         this.updateRenderer();
 
         for (const listener of this.commandListeners) {
-            listener(command.toLocaleLowerCase());
+            listener(_typedText.toLocaleLowerCase());
         }
     }
 
@@ -130,7 +144,7 @@ export default class Screen {
     }
 
     private checkLinesCount() {
-        // If typed text is not empty, we shoult remove one more line
+        // We shoult remove one more line
         // because we wonna show typed line
         if (this.content.length >= rendererConfig.linesCount) {
             this.content = this.content.slice(
@@ -140,10 +154,8 @@ export default class Screen {
     }
 
     private updateRenderer() {
-        if (this.typedText.length) {
-            this.renderer.setContent([...this.content, this.typedText]);
-        } else {
-            this.renderer.setContent(this.content);
-        }
+        this.renderer.setContent(
+            this.content.concat([`${this.inputArrow}${this.typedText}`])
+        );
     }
 }

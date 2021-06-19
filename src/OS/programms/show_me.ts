@@ -1,6 +1,5 @@
-import { ISystem, IProgramIterator } from '../OS';
-
-export const name = 'show-me';
+import createProgram from '../createProgram';
+import { ISystem } from '../OS';
 
 function show(imageName: string, system: ISystem) {
     switch (imageName) {
@@ -53,10 +52,7 @@ function show(imageName: string, system: ISystem) {
     }
 }
 
-export default function* (
-    args: string[] = [],
-    system: ISystem
-): IProgramIterator {
+export default createProgram('show-me', function* (args, system) {
     const [imageName] = args;
 
     if (imageName) {
@@ -68,6 +64,8 @@ export default function* (
         ]);
     }
 
-    const nextCommands: string[] = yield;
+    const nextCommands: string[] = yield system.requestText({
+        arrowText: 'name:',
+    });
     show(nextCommands[0], system);
-}
+});

@@ -1,7 +1,5 @@
-import { ISystem, IProgramIterator } from '../OS';
+import createProgram from '../createProgram';
 
-export const name = 'clear';
-
-export default function* (args: string[], system: ISystem): IProgramIterator {
-    system.screen.clear();
-}
+export default createProgram('clear', function* (args, system) {
+    system.clear();
+});
