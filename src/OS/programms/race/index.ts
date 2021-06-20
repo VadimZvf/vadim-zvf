@@ -1,4 +1,7 @@
 import createProgram from '../../createProgram';
+import explosion from './explosion.wav';
+import speed from './speed.wav';
+
 const SCREEN_WIDTH = 30;
 const SCREEN_HEIGHT = 17;
 
@@ -172,6 +175,11 @@ function saveScore(score: number) {
 }
 
 export default createProgram('race', function* (args, system) {
+    const explosionSound = new Audio(explosion);
+    explosionSound.volume = 0.3;
+    const speedSound = new Audio(speed);
+    speedSound.volume = 0.5;
+
     const userPosition = { x: 0, y: 0 };
     let requestID: number;
 
@@ -206,9 +214,14 @@ export default createProgram('race', function* (args, system) {
                         ),
                     });
 
+                    explosionSound.play();
                     saveScore(score);
                     system.addContent(layer.map((line) => line.join('')));
                     return;
+                }
+
+                if (score % 8 === 0) {
+                    speedSound.play();
                 }
             }
 
