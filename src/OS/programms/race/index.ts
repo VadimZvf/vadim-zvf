@@ -2,7 +2,7 @@ import createProgram from '../../createProgram';
 import explosion from './explosion.wav';
 import speed from './speed.wav';
 
-const SCREEN_WIDTH = 30;
+const SCREEN_WIDTH = 40;
 const SCREEN_HEIGHT = 17;
 
 const ROAD_WIDTH = 11;
@@ -233,15 +233,15 @@ export default createProgram('race', function* (args, system) {
             draw(layer, CAR_IMAGE, userPosition);
 
             draw(layer, ['best score:' + bestScore], {
-                x: SCREEN_WIDTH - 13,
+                x: SCREEN_WIDTH - 25,
                 y: 0,
             });
             draw(layer, ['score:' + score], {
-                x: SCREEN_WIDTH - 13,
+                x: SCREEN_WIDTH - 25,
                 y: 1,
             });
             draw(layer, ['speed:' + Math.floor(enemyStartSpeed - enemySpeed)], {
-                x: SCREEN_WIDTH - 13,
+                x: SCREEN_WIDTH - 25,
                 y: 3,
             });
 
