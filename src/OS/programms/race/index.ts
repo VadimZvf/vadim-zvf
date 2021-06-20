@@ -232,16 +232,16 @@ export default createProgram('race', function* (args, system) {
             }
             draw(layer, CAR_IMAGE, userPosition);
 
-            draw(layer, ['best score:' + Math.floor(bestScore / 10)], {
-                x: SCREEN_WIDTH - 15,
+            draw(layer, ['best score:' + bestScore], {
+                x: SCREEN_WIDTH - 13,
                 y: 0,
             });
-            draw(layer, ['score:' + Math.floor(score / 10)], {
-                x: SCREEN_WIDTH - 15,
+            draw(layer, ['score:' + score], {
+                x: SCREEN_WIDTH - 13,
                 y: 1,
             });
             draw(layer, ['speed:' + Math.floor(enemyStartSpeed - enemySpeed)], {
-                x: SCREEN_WIDTH - 15,
+                x: SCREEN_WIDTH - 13,
                 y: 3,
             });
 
