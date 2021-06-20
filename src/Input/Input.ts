@@ -34,6 +34,14 @@ class Input {
         });
     }
 
+    public subscribeKeyDownEvent(listener: (e: KeyboardEvent) => void) {
+        this.textareaNode.addEventListener('keydown', listener);
+
+        return () => {
+            this.textareaNode.removeEventListener('keydown', listener);
+        };
+    }
+
     public subscribeBackspaceKeyEvent(listener: () => void) {
         this.textareaNode.addEventListener('keydown', (event) => {
             if (event.keyCode === 8) {

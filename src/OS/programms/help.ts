@@ -7,6 +7,7 @@ export default createProgram('help', function* (args, system) {
         ' - socials',
         ' - show-me',
         ' - rainbow',
+        ' - race',
         ' - source-code',
         ' - help',
         ' - clear',
