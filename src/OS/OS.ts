@@ -6,7 +6,6 @@ import {
 
 export interface IScreen {
     subscribeCommand(listener: (command: string) => void): void;
-    subscribeKeyDown(listener: (e: KeyboardEvent) => void): () => void;
     toggleRainbowEffect(): void;
     addContent(lines: string[]): void;
     resetInputArrow(): void;
@@ -18,7 +17,6 @@ export interface IScreen {
 export interface ISystem {
     addContent(lines: string[]): void;
     requestText(data: IRequestText): IRequestTextFiber;
-    subscribeKeyDown(listener: (e: KeyboardEvent) => void): void;
     toggleRainbowEffect(): void;
     clear(): void;
     lockInput(): void;
@@ -42,7 +40,6 @@ export default class OS {
         [programmsName: string]: IProgram;
     } = {};
     programmInProgress: IProgramIterator | void;
-    programmEventListeners: Array<() => void> = [];
     systemApiInProgress: string | null = null;
 
     public runProgramm(name: string, args: string[]) {
@@ -88,9 +85,6 @@ export default class OS {
 
         if (result.done) {
             this.programmInProgress = null;
-            // Disable all current program listeners
-            this.programmEventListeners.map((unsubscribe) => unsubscribe());
-            this.programmEventListeners = [];
             return;
         }
 
@@ -139,10 +133,6 @@ export default class OS {
                     type: SYSTEM_INTERFACE_REQUESTS.text,
                     data,
                 };
-            },
-            subscribeKeyDown: (listener) => {
-                const unsubscribe = this.screen.subscribeKeyDown(listener);
-                this.programmEventListeners.push(unsubscribe);
             },
             lockInput() {
                 throw new Error('Not implemented');

@@ -3,7 +3,6 @@ import { IProgramDefinition } from './createProgram';
 
 const fakeScreen: IScreen = {
     subscribeCommand() {},
-    subscribeKeyDown: () => () => {},
     toggleRainbowEffect() {},
     addContent() {},
     resetInputArrow() {},

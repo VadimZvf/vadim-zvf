@@ -9,7 +9,6 @@ const fakeRenderer: IRenderer = {
 
 const fakeInput: IInput = {
     subscribeChangeEvent() {},
-    subscribeKeyDownEvent: () => () => {},
     subscribeBackspaceKeyEvent() {},
     subscribeEnterKeyEvent() {},
     subscribeFocusEvent() {},

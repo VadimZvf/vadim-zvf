@@ -266,7 +266,24 @@ export default createProgram('race', function* (args, system) {
         }
     }
 
-    system.subscribeKeyDown(handleKeyPress);
+    function handleTouch(event: TouchEvent) {
+        const windowWidth = window.innerWidth;
+        const clientX = event.touches[0].clientX;
+
+        if (clientX / windowWidth < 0.45 && userPosition.x > 1) {
+            userPosition.x = userPosition.x - CAR_WIDTH;
+        }
+
+        if (
+            clientX / windowWidth >= 0.55 &&
+            userPosition.x < ROAD_WIDTH - CAR_WIDTH - 1
+        ) {
+            userPosition.x = userPosition.x + CAR_WIDTH;
+        }
+    }
+
+    document.addEventListener('keydown', handleKeyPress);
+    document.addEventListener('touchstart', handleTouch);
 
     startGame();
 
@@ -281,6 +298,8 @@ export default createProgram('race', function* (args, system) {
         if (['R', 'r', 'retry', 'Retry'].includes(command)) {
             startGame();
         } else {
+            document.removeEventListener('keydown', handleKeyPress);
+            document.removeEventListener('touchstart', handleTouch);
             return;
         }
     }

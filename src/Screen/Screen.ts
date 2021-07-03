@@ -9,7 +9,6 @@ export interface IRenderer {
 
 export interface IInput {
     subscribeChangeEvent(listener: (text: string) => void): void;
-    subscribeKeyDownEvent(listener: (e: KeyboardEvent) => void): () => void;
     subscribeBackspaceKeyEvent(listener: () => void): void;
     subscribeEnterKeyEvent(listener: () => void): void;
     subscribeFocusEvent(listener: () => void): void;
@@ -56,10 +55,6 @@ export default class Screen {
 
     public subscribeCommand(listener: (command: string) => void) {
         this.commandListeners.push(listener);
-    }
-
-    public subscribeKeyDown(listener: (e: KeyboardEvent) => void) {
-        return this.input.subscribeKeyDownEvent(listener);
     }
 
     public addContent(lines: string[]) {
