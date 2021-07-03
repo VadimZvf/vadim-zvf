@@ -52,7 +52,7 @@ function show(imageName: string, system: ISystem) {
     }
 }
 
-export default createProgram('show-me', function* (args, system) {
+export default createProgram('show', function* (args, system) {
     const [imageName] = args;
 
     if (imageName) {

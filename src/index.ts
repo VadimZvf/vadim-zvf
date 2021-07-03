@@ -3,8 +3,9 @@ import OS from './OS';
 import socials from './OS/programms/socials';
 import help from './OS/programms/help';
 import contacts from './OS/programms/contacts';
+import about from './OS/programms/about';
 import sourceCode from './OS/programms/source_code';
-import showMe from './OS/programms/show_me';
+import show from './OS/programms/show';
 import clear from './OS/programms/clear';
 import rainbow from './OS/programms/rainbow';
 import greeting from './OS/programms/greeting';
@@ -17,8 +18,9 @@ const programs = [
     socials,
     help,
     contacts,
+    about,
     sourceCode,
-    showMe,
+    show,
     clear,
     rainbow,
     greeting,

@@ -176,9 +176,9 @@ function saveScore(score: number) {
 
 export default createProgram('race', function* (args, system) {
     const explosionSound = new Audio(explosion);
-    explosionSound.volume = 0.3;
+    explosionSound.volume = 0.5;
     const speedSound = new Audio(speed);
-    speedSound.volume = 0.5;
+    speedSound.volume = 0.3;
 
     const userPosition = { x: 0, y: 0 };
     let requestID: number;
@@ -272,7 +272,7 @@ export default createProgram('race', function* (args, system) {
 
     while (true) {
         const [command] = yield system.requestText({
-            arrowText: 'type q - for exit, r - for retry',
+            arrowText: 'type q - for exit, r - for retry:',
         });
 
         system.clear();
