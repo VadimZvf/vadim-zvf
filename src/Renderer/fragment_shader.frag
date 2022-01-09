@@ -67,7 +67,7 @@ vec2 getDistortedCoords(vec2 uv) {
     // Random calculation for broken effect
     float yShift = onOff(0.2, 0.01, 0.5) * (
         sin(time / 15.0) + (sin(time / 2.0) * cos(time + 10.0))
-    ) / 300.0;
+    ) / 500.0;
 
     look.x = look.x + xShift;
     look.y = look.y + yShift;
@@ -200,13 +200,13 @@ void main(void) {
     vec4 currentPointColor = vec4(0.0);
 
     // Apply fisheye effect, and distortion effect
-    vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(uv);
-    vec2 uvWithDistortion = getDistortedCoords(fisheyedCoords);
+    // vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(uv);
+    vec2 uvWithDistortion = getDistortedCoords(uv);
 
     // Add text
     currentPointColor += getText(uvWithDistortion);
     // add stripes effect
-    currentPointColor += stripes(fisheyedCoords);
+    currentPointColor += stripes(uv);
     // apply noise texture
     currentPointColor += noise(uv);
     // apply vignette

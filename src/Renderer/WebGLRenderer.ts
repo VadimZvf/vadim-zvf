@@ -1,6 +1,8 @@
 import {
     Scene,
-    OrthographicCamera,
+    PerspectiveCamera,
+    PointLight,
+    AmbientLight,
     WebGLRenderer as ThreeJSRenderer,
     PlaneGeometry,
     ShaderMaterial,
@@ -11,13 +13,12 @@ import {
     Vector2,
     RGBAFormat,
 } from 'three';
+import {FBXLoader} from 'three/examples/jsm/loaders/FBXLoader';
 import glitchImage from '../glitch.png';
 import config from './config';
+import mac from './models/fbx/mac.fbx';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
-
-const userAgent = navigator.userAgent.toLowerCase();
-const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
 
 /**
  * Text mappink work like this:
@@ -141,26 +142,45 @@ export class WebGLRenderer {
         document.body.appendChild(canvas);
 
         this.scene = new Scene();
-        this.camera = new OrthographicCamera(
-            params.size.width / -2,
-            params.size.width / 2,
-            params.size.height / 2,
-            params.size.height / -2,
+        this.camera = new PerspectiveCamera(
+            70,
+            params.size.width / params.size.height,
             1,
-            1000
+            2000 
         );
-        this.camera.position.z = 1;
+        this.camera.position.z = 400;
+        this.camera.lookAt(this.scene.position);
+        this.camera.updateProjectionMatrix();
 
         this.renderer = new ThreeJSRenderer({
             canvas: canvas,
         });
         this.renderer.setSize(params.size.width, params.size.height);
 
+        const ambientLight = new AmbientLight(0xcccccc, 1);
+        this.scene.add(ambientLight);
+
+        const pointLight = new PointLight(0xffffff, 0.8);
+        this.camera.add(pointLight);
+        this.scene.add(this.camera);
+
+
         this.size = params.size;
+
+        const onDocumentMouseMove = (event: MouseEvent) => {
+            const mouseX = (event.clientX - (window.innerWidth / 2)) / 5;
+            const mouseY = (event.clientY - (window.innerHeight / 2)) / 5;
+
+            this.camera.position.x += (mouseX - this.camera.position.x);
+            this.camera.position.y += (-mouseY - this.camera.position.y);
+            this.camera.lookAt(this.scene.position);
+        }
+
+        document.addEventListener('mousemove', onDocumentMouseMove);
     }
 
     private size: { width: number; height: number };
-    private camera: OrthographicCamera;
+    private camera: PerspectiveCamera;
     private scene: Scene;
     private renderer: ThreeJSRenderer;
     private material: ShaderMaterial;
@@ -198,11 +218,31 @@ export class WebGLRenderer {
         });
         const screen = new Mesh(geometry, this.material);
         screen.position.x = 0;
-        screen.position.y = 0;
-        screen.position.z = 0;
+        screen.position.y = 67;
+        screen.position.z = 128;
+        screen.scale.x = 0.27
+        screen.scale.y = 0.27
+        screen.scale.z = 0.22
+        screen.rotation.x = -Math.PI / 25
+        screen.rotation.y = 0
+        screen.rotation.z = 0
 
         this.scene.add(screen);
 
+        const loader = new FBXLoader();
+        loader.load(mac, object => {
+            object.traverse( function ( child ) {
+                if (child instanceof Mesh && child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            object.scale.x = 0.4
+            object.scale.y = 0.4
+            object.scale.z = 0.4
+            this.scene.add(object);
+        });
+       
         this.loadGlichTexture();
     }
 
