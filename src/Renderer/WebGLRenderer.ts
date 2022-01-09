@@ -157,10 +157,12 @@ export class WebGLRenderer {
         });
         this.renderer.setSize(params.size.width, params.size.height);
 
-        const ambientLight = new AmbientLight(0xcccccc, 1);
+        const ambientLight = new AmbientLight(0xcccccc, 0.7);
         this.scene.add(ambientLight);
 
         const pointLight = new PointLight(0xffffff, 0.8);
+        pointLight.position.y = 260;
+        pointLight.position.z = 20;
         this.camera.add(pointLight);
         this.scene.add(this.camera);
 
