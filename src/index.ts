@@ -29,7 +29,7 @@ const programs = [
 
 function init() {
     const screen = new Screen(
-        new Renderer({ size: { width: 896, height: 704 } }),
+        new Renderer(),
         new Input()
     );
 

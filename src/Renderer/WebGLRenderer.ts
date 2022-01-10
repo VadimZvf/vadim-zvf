@@ -138,6 +138,8 @@ interface IParams {
 
 export class WebGLRenderer {
     constructor(params: IParams) {
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
 
@@ -148,7 +150,7 @@ export class WebGLRenderer {
             1,
             2000 
         );
-        this.camera.position.z = 400;
+        this.camera.position.z = 460;
         this.camera.lookAt(this.scene.position);
         this.camera.updateProjectionMatrix();
 
@@ -166,22 +168,9 @@ export class WebGLRenderer {
         this.camera.add(pointLight);
         this.scene.add(this.camera);
 
-
-        this.size = params.size;
-
-        const onDocumentMouseMove = (event: MouseEvent) => {
-            const mouseX = (event.clientX - (window.innerWidth / 2)) / 5;
-            const mouseY = (event.clientY - (window.innerHeight / 2)) / 5;
-
-            this.camera.position.x += (mouseX - this.camera.position.x);
-            this.camera.position.y += (-mouseY - this.camera.position.y);
-            this.camera.lookAt(this.scene.position);
-        }
-
-        document.addEventListener('mousemove', onDocumentMouseMove);
+        document.addEventListener('mousemove', this.handleMouseMove);
     }
 
-    private size: { width: number; height: number };
     private camera: PerspectiveCamera;
     private scene: Scene;
     private renderer: ThreeJSRenderer;
@@ -197,17 +186,24 @@ export class WebGLRenderer {
         this.renderer.render(this.scene, this.camera);
     }
 
+    public setSize(size: { width: number, height: number }) {
+        console.log('set size', size);
+        this.camera.aspect = size.width / size.height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(size.width, size.height);
+    }
+
     public createScreen() {
         this.glitchTexture = new Texture();
         this.glitchTexture.wrapS = RepeatWrapping;
         this.glitchTexture.wrapT = RepeatWrapping;
 
-        const geometry = new PlaneGeometry(this.size.width, this.size.height);
+        const geometry = new PlaneGeometry(896, 704);
         this.material = new ShaderMaterial({
             uniforms: {
                 uGlitch: { value: this.glitchTexture },
                 uResolution: {
-                    value: new Vector2(this.size.width, this.size.height),
+                    value: new Vector2(896, 704),
                 },
                 uTextTexture: { value: mapTextToBitMasksArray('') },
                 uLastCharPosition: { value: 0 },
@@ -312,6 +308,15 @@ export class WebGLRenderer {
             this.glitchTexture.image = image;
             this.glitchTexture.needsUpdate = true;
         };
+    }
+
+    private handleMouseMove(event: MouseEvent) {
+        const mouseX = (event.clientX - (window.innerWidth / 2)) / 5;
+        const mouseY = (event.clientY - (window.innerHeight / 2)) / 5;
+
+        this.camera.position.x += (mouseX - this.camera.position.x);
+        this.camera.position.y += (-mouseY - this.camera.position.y);
+        this.camera.lookAt(this.scene.position);
     }
 }
 

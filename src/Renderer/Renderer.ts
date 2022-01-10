@@ -1,17 +1,16 @@
 import { WebGLRenderer } from './WebGLRenderer';
 
-interface IParams {
-    size: {
-        width: number;
-        height: number;
-    };
-}
-
 class Renderer {
-    constructor(params: IParams) {
+    constructor() {
         this.render = this.render.bind(this);
+        this.handleResize = this.handleResize.bind(this);
 
-        this.webGLRenderer = new WebGLRenderer(params);
+        const size = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+
+        this.webGLRenderer = new WebGLRenderer({ size });
 
         this.webGLRenderer.createScreen();
         this.init();
@@ -20,6 +19,8 @@ class Renderer {
     webGLRenderer: WebGLRenderer;
 
     private init() {
+        window.addEventListener('resize', this.handleResize)
+
         this.render();
     }
 
@@ -27,6 +28,14 @@ class Renderer {
         this.webGLRenderer.render();
 
         window.requestAnimationFrame(this.render);
+    }
+
+    private handleResize() {
+        const size = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+        this.webGLRenderer.setSize(size);
     }
 
     public setContent(lines: string[]) {
