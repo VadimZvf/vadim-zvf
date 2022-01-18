@@ -10,123 +10,34 @@ import {
     Mesh,
     Texture,
     RepeatWrapping,
-    Vector2,
     RGBAFormat,
+    Vector2,
+    MeshBasicMaterial,
 } from 'three';
-import {FBXLoader} from 'three/examples/jsm/loaders/FBXLoader';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import glitchImage from '../glitch.png';
+import textSpriteImage from './text_sprite.png';
 import config from './config';
 import mac from './models/fbx/mac.fbx';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
-/**
- * Text mappink work like this:
- *
- * "A"
- * ⬇
- * ░█░
- * █░█
- * █░█
- * ███
- * █░█
- * █░█
- * █░█
- * ⬇
- * 010
- * 101
- * 101
- * 111
- * 101
- * 101
- * 101
- * ⬇
- * 010 101 101 111 101 101 101
- * ⬇
- * 712557
- */
-const symbolsMapping: Record<string, number> = {
-    space: 0,
-    a: 712557,
-    b: 1760622,
-    c: 706858,
-    d: 1760110,
-    e: 2018607,
-    f: 2018596,
-    g: 708458,
-    h: 1498989,
-    i: 1909911,
-    j: 1872746,
-    k: 1498477,
-    l: 1198375,
-    m: 1571693,
-    n: 1760109,
-    o: 711530,
-    p: 711972,
-    q: 711675,
-    r: 1760621,
-    s: 2018927,
-    t: 1909906,
-    u: 1497963,
-    v: 1497938,
-    w: 1498109,
-    x: 1496429,
-    y: 1496210,
-    z: 2004271,
-    1: 730263,
-    2: 693543,
-    3: 693354,
-    4: 1496649,
-    5: 1985614,
-    6: 707946,
-    7: 1873042,
-    8: 709994,
-    9: 710250,
-    0: 711530,
-    '!': 1198116,
-    '.': 2,
-    ',': 36,
-    '"': 1474560,
-    '-': 3584,
-    '█': 2097151,
-    '░': 1398101,
-    ':': 73872,
-    '(': 346385,
-    ')': 1118804,
-    '@': 708586, // T_T how to show this symbol?(((
-    '>': 139936,
-    '?': 693378,
-    '/': 304292,
-};
+const availableSymbols =
+    '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя█░ ';
 
 /// OMG OMG!!
 // We send text data to shader as Texture!
 // because text is so long, and not all browsers allow use such long Arrays in shader
 function mapTextToBitMasksArray(text: string = ''): DataTexture {
-    const masks: number[] = [];
+    const masks = [];
 
     for (let index = 0; index < text.length; index++) {
-        const symbol = text[index].toLocaleLowerCase();
-        const mask = symbolsMapping[symbol] || symbolsMapping.space;
-        // color can contain maximum 255 value(
-        // thats why we should split number to small parts
-        const path1 = (mask & 0b111111000000000000000) >> 15;
-        const path2 = (mask & 0b000000111111000000000) >> 9;
-        const path3 = (mask & 0b000000000000111111000) >> 3;
-        const path4 = mask & 0b000000000000000000111;
+        const symbolPosition = availableSymbols.indexOf(text[index]);
 
-        masks.push(path1, path2, path3, path4);
+        masks.push(0, symbolPosition, 0, 0);
     }
 
-    // Fix float value rounting in GLSL(
-    masks.push(0, 0, 0, 0);
-
-    return new DataTexture(
-        new Uint8Array(masks),
-        config.maxSymbolsCount + 1,
-        1,
-        RGBAFormat
-    );
+    return new DataTexture(new Uint8Array(masks), 972, 1, RGBAFormat);
 }
 
 interface IParams {
@@ -148,7 +59,7 @@ export class WebGLRenderer {
             70,
             params.size.width / params.size.height,
             1,
-            2000 
+            2000
         );
         this.camera.position.z = 460;
         this.camera.lookAt(this.scene.position);
@@ -176,6 +87,7 @@ export class WebGLRenderer {
     private renderer: ThreeJSRenderer;
     private material: ShaderMaterial;
     private glitchTexture: Texture;
+    private textSpriteTexture: Texture;
 
     private vertexShader = vertexShader;
     private fragmentShader = fragmentShader;
@@ -186,8 +98,7 @@ export class WebGLRenderer {
         this.renderer.render(this.scene, this.camera);
     }
 
-    public setSize(size: { width: number, height: number }) {
-        console.log('set size', size);
+    public setSize(size: { width: number; height: number }) {
         this.camera.aspect = size.width / size.height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(size.width, size.height);
@@ -197,15 +108,28 @@ export class WebGLRenderer {
         this.glitchTexture = new Texture();
         this.glitchTexture.wrapS = RepeatWrapping;
         this.glitchTexture.wrapT = RepeatWrapping;
+        this.textSpriteTexture = new Texture();
+
+        const screenBackgroundGeometry = new PlaneGeometry(896, 704);
+        const screenBackgroundMaterial = new MeshBasicMaterial({
+            color: 0x000000,
+        });
+        const screenBackground = new Mesh(
+            screenBackgroundGeometry,
+            screenBackgroundMaterial
+        );
 
         const geometry = new PlaneGeometry(896, 704);
         this.material = new ShaderMaterial({
             uniforms: {
                 uGlitch: { value: this.glitchTexture },
+                uTextSprite: { value: this.textSpriteTexture },
+                uTextTexture: {
+                    value: mapTextToBitMasksArray(' '.repeat(972)),
+                },
                 uResolution: {
                     value: new Vector2(896, 704),
                 },
-                uTextTexture: { value: mapTextToBitMasksArray('') },
                 uLastCharPosition: { value: 0 },
                 uShowCursor: { value: 0 },
                 uShowRainbow: { value: 0 },
@@ -218,30 +142,48 @@ export class WebGLRenderer {
         screen.position.x = 0;
         screen.position.y = 67;
         screen.position.z = 128;
-        screen.scale.x = 0.27
-        screen.scale.y = 0.27
-        screen.scale.z = 0.22
-        screen.rotation.x = -Math.PI / 25
-        screen.rotation.y = 0
-        screen.rotation.z = 0
+        screen.scale.x = 0.24;
+        screen.scale.y = 0.24;
+        screen.scale.z = 0.22;
+        screen.rotation.x = -Math.PI / 25;
+        screen.rotation.y = 0;
+        screen.rotation.z = 0;
 
+        screenBackground.position.set(
+            screen.position.x,
+            screen.position.y,
+            screen.position.z - 0.01
+        );
+        screenBackground.scale.set(
+            screen.scale.x + 0.3,
+            screen.scale.y + 0.3,
+            screen.scale.z
+        );
+        screenBackground.rotation.set(
+            screen.rotation.x,
+            screen.rotation.y,
+            screen.rotation.z
+        );
+
+        this.scene.add(screenBackground);
         this.scene.add(screen);
 
         const loader = new FBXLoader();
-        loader.load(mac, object => {
-            object.traverse( function ( child ) {
+        loader.load(mac, (object) => {
+            object.traverse(function (child) {
                 if (child instanceof Mesh && child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
-            object.scale.x = 0.4
-            object.scale.y = 0.4
-            object.scale.z = 0.4
+            object.scale.x = 0.4;
+            object.scale.y = 0.4;
+            object.scale.z = 0.4;
             this.scene.add(object);
         });
-       
+
         this.loadGlichTexture();
+        this.loadTextSpriteTexture();
     }
 
     public setLines(lines: string[]) {
@@ -300,22 +242,35 @@ export class WebGLRenderer {
         }
     }
 
-    private loadGlichTexture() {
-        const image = new Image();
-        image.src = glitchImage;
+    private async loadGlichTexture() {
+        const image = await this.loadImage(glitchImage);
+        this.glitchTexture.image = image;
+        this.glitchTexture.needsUpdate = true;
+    }
 
-        image.onload = () => {
-            this.glitchTexture.image = image;
-            this.glitchTexture.needsUpdate = true;
-        };
+    private async loadTextSpriteTexture() {
+        const image = await this.loadImage(textSpriteImage);
+        this.textSpriteTexture.image = image;
+        this.textSpriteTexture.needsUpdate = true;
+    }
+
+    private async loadImage(path: string): Promise<HTMLImageElement> {
+        return new Promise((resolve) => {
+            const image = new Image();
+            image.src = path;
+
+            image.onload = () => {
+                resolve(image);
+            };
+        });
     }
 
     private handleMouseMove(event: MouseEvent) {
-        const mouseX = (event.clientX - (window.innerWidth / 2)) / 5;
-        const mouseY = (event.clientY - (window.innerHeight / 2)) / 5;
+        const mouseX = (event.clientX - window.innerWidth / 2) / 5;
+        const mouseY = (event.clientY - window.innerHeight / 2) / 5;
 
-        this.camera.position.x += (mouseX - this.camera.position.x);
-        this.camera.position.y += (-mouseY - this.camera.position.y);
+        this.camera.position.x += mouseX - this.camera.position.x;
+        this.camera.position.y += -mouseY - this.camera.position.y;
         this.camera.lookAt(this.scene.position);
     }
 }

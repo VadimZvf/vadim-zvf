@@ -1,0 +1,26 @@
+<svg version="1.1" baseProfile="full"
+  xmlns="http://www.w3.org/2000/svg" width="79.2" height="210" viewbox="0 0 79.2 210">
+  <style>
+    .text {
+        font: normal 12px monospace;
+        fill: white;
+        alignment-baseline: hanging;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="black"></rect>
+  <text x="0" y="2px" class="text">!"#$%&amp;'()*+</text>
+  <text x="0" y="16px" class="text">,-./0123456</text>
+  <text x="0" y="30px" class="text">789:;&lt;=&gt;?@A</text>
+  <text x="0" y="44px" class="text">BCDEFGHIJKL</text>
+  <text x="0" y="58px" class="text">MNOPQRSTUVW</text>
+  <text x="0" y="72px" class="text">XYZ[\]^_`ab</text>
+  <text x="0" y="86px" class="text">cdefghijklm</text>
+  <text x="0" y="100px" class="text">nopqrstuvwx</text>
+  <text x="0" y="114px" class="text">yz{|}~АБВГД</text>
+  <text x="0" y="128px" class="text">ЕЖЗИЙКЛМНОП</text>
+  <text x="0" y="142px" class="text">РСТУФХЦЧШЩЪ</text>
+  <text x="0" y="156px" class="text">ЫЬЭЮЯабвгде</text>
+  <text x="0" y="170px" class="text">жзийклмнопр</text>
+  <text x="0" y="184px" class="text">стуфхцчшщъы</text>
+  <text x="0" y="198px" class="text">ьэюя█░ </text>
+</svg>

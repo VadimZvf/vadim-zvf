@@ -28,10 +28,7 @@ const programs = [
 ];
 
 function init() {
-    const screen = new Screen(
-        new Renderer(),
-        new Input()
-    );
+    const screen = new Screen(new Renderer(), new Input());
 
     const os = new OS(screen, programs);
 

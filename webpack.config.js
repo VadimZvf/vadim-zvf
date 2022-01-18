@@ -15,7 +15,7 @@ module.exports = {
                 use: 'raw-loader',
             },
             {
-                test: /\.jpeg$|\.png$|\.wav$|\.fbx$|\.obj$/,
+                test: /\.jpeg$|\.png$|\.svg$|\.wav$|\.fbx$|\.obj$/,
                 use: 'file-loader',
                 exclude: /node_modules/,
             },

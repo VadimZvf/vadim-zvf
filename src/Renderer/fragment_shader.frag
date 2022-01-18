@@ -1,20 +1,18 @@
 precision highp float;
 uniform sampler2D uGlitch;
 uniform sampler2D uTextTexture;
-uniform vec2 uResolution;
+uniform sampler2D uTextSprite;
 uniform float uLastCharPosition;
 uniform float uShowCursor;
 uniform float uShowRainbow;
 uniform float time;
 varying vec2 vTextureCoord;
 
-// Size of bit map character
-#define CHAR_SIZE vec2(3, 7)
-// Size of box with symbol
-#define CHAR_SPACING vec2(14, 32)
-// Padding for text container, for both sides. Should be a multiple of CHAR_SPACING
-#define PADDING vec2(70.0, 64.0)
-#define ZOOM 0.33
+#define SYMBOLS_PER_LINE_IN_SPRITE 11.0
+#define LINES_COUNT_IN_SPRITE 15.0
+
+#define SYMBOLS_PER_LINE_ON_SCREEN 54.0
+#define LINES_COUNT_ON_SCREEN 18.0
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃        Noise effect        ┃
@@ -125,73 +123,78 @@ vec4 rainbow(vec2 uv) {
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃       Text rendering       ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-// Extracts bit b from the given number.
-float extract_bit(float number, float bit) {
-    return floor(mod(floor(number / pow(2.0, floor(bit))), 2.0));   
-}
-
-// Returns the pixel at uv in the given bit-packed sprite.
-float sprite(float spr, vec2 size, vec2 uv) {
-    // Calculate the bit to extract (x + y * width) (flipped on x-axis)
-    float bit = (size.x - uv.x - 1.0) + uv.y * size.x;
-    
-    // Clipping bound to remove garbage outside the sprite's boundaries.
-    bool bounds = all(greaterThanEqual(uv, vec2(0.0, 0.0)));
-    bounds = bounds && all(lessThan(uv, size));
-
-    return bounds ? extract_bit(spr, bit) : 0.0;
-}
-
 // Prints a character.
-float char(float ch, vec2 uv, vec2 cursor) {
-    return sprite(ch, CHAR_SIZE, floor(ZOOM * (uv - cursor)));
+float char(float charIndex, vec2 positionInsideSprite) {
+    vec2 symbolPositionInGrid = vec2(
+        charIndex - (floor(charIndex / SYMBOLS_PER_LINE_IN_SPRITE) * SYMBOLS_PER_LINE_IN_SPRITE),
+        floor(charIndex / SYMBOLS_PER_LINE_IN_SPRITE)
+    );
+
+    vec2 symbolSizeInGreen = vec2(
+        1.0 / SYMBOLS_PER_LINE_IN_SPRITE,
+        1.0 / LINES_COUNT_IN_SPRITE
+    );
+
+    vec4 symbolColorFromTexture = texture2D(
+        uTextSprite,
+        vec2(
+            symbolPositionInGrid.x / SYMBOLS_PER_LINE_IN_SPRITE + positionInsideSprite.x * symbolSizeInGreen.x,
+            1.0 - (symbolPositionInGrid.y / LINES_COUNT_IN_SPRITE + positionInsideSprite.y * symbolSizeInGreen.y)
+        )
+    );
+
+    bool bounds = all(greaterThanEqual(positionInsideSprite, vec2(0.0, 0.0)));
+    bounds = bounds && all(lessThan(positionInsideSprite, vec2(1.0, 1.0)));
+
+    return bounds ? symbolColorFromTexture.x * 2.0 : 0.0;
 }
 
-float getCharMask(float index) {
-    vec4 textureData = texture2D(uTextTexture, vec2(index / 973.0, 0.0)) * 255.0;
-
-    return (
-        textureData.x * 32768.0 +
-        textureData.y * 512.0 +
-        textureData.z * 8.0 +
-        textureData.w
-    );
+float getCharIndexInGrid(float charIndexInText) {
+    vec4 textureData = texture2D(
+        uTextTexture,
+        vec2(charIndexInText / (SYMBOLS_PER_LINE_ON_SCREEN * LINES_COUNT_ON_SCREEN), 0.0)
+    ) * 255.0;
+    return textureData.y;
 }
 
 vec4 getText(vec2 uv) {
-    // Coords is value betwean 0 and 1, here we transform this value to real coords 1,2,3,4....
-    vec2 currentCoord = uv * uResolution;
- 
-    if (currentCoord.y > PADDING.y && currentCoord.y < uResolution.y - PADDING.y && currentCoord.x > PADDING.x && currentCoord.x < uResolution.x - PADDING.x) {
-        // Calculate how match symbols was before current point
-        vec2 bucket = floor(
-            vec2(
-                (currentCoord.x - PADDING.x) / CHAR_SPACING.x,
-                (uResolution.y - PADDING.y - currentCoord.y) / CHAR_SPACING.y
-            )
-        );
+    vec2 newUv = vec2(
+        uv.x,
+        1.0 - uv.y
+    );
 
-        // Count of symbols on line 
-        float numCharsRow = floor((uResolution.x - PADDING.x * 2.0) / CHAR_SPACING.x);
+    vec2 symbolSizeOnScreen = vec2(
+        1.0 / SYMBOLS_PER_LINE_ON_SCREEN,
+        1.0 / LINES_COUNT_ON_SCREEN
+    );
 
-        // Calculate how match 
-        float charIndex = bucket.y * numCharsRow + bucket.x;
- 
-        float charMask = getCharMask(charIndex);
+    // Calculate how match symbols was before current point
+    vec2 bucket = floor(
+        vec2(
+            newUv.x / symbolSizeOnScreen.x,
+            newUv.y / symbolSizeOnScreen.y
+        )
+    );
 
-        // Calculate current point position inside grid
-        vec2 cursor = floor(currentCoord / CHAR_SPACING) * CHAR_SPACING;
-        // Render char
-        vec4 charColor = vec4(1.0, 1.0, 1.0, 1.0) * char(charMask, currentCoord, cursor);
+    // Calculate how match 
+    float charIndexInText = bucket.y * SYMBOLS_PER_LINE_ON_SCREEN + bucket.x;
+    float charIndexInGrid = getCharIndexInGrid(charIndexInText);
 
-        // Render cursor
-        float isLastChar = 1.0 - step(0.5, abs(uLastCharPosition - charIndex));
-        charColor += vec4(1.0, 1.0, 1.0, 1.0) * uShowCursor * isLastChar * sin(time / 6.0);
+    // Calculate current point position inside grid
+    vec2 cursor = floor(newUv / symbolSizeOnScreen) * symbolSizeOnScreen;
+    vec2 positionInsideSprite = vec2(
+        (newUv.x - cursor.x) / symbolSizeOnScreen.x,
+        (newUv.y - cursor.y) / symbolSizeOnScreen.y
+    );
 
-        return charColor;
-    }
+    // Render char
+    vec4 charColor = vec4(1.0, 1.0, 1.0, 1.0) * char(charIndexInGrid, positionInsideSprite);
 
-    return vec4(0.0, 0.0, 0.0, 1.0);
+    // Render cursor
+    float isLastChar = 1.0 - step(0.5, abs(uLastCharPosition - charIndexInText));
+    charColor += vec4(1.0, 1.0, 1.0, 1.0) * uShowCursor * isLastChar * sin(time / 6.0);
+
+    return charColor;
 }
 
 void main(void) {
@@ -201,16 +204,16 @@ void main(void) {
 
     // Apply fisheye effect, and distortion effect
     // vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(uv);
-    vec2 uvWithDistortion = getDistortedCoords(uv);
+    // vec2 uvWithDistortion = getDistortedCoords(uv);
 
     // Add text
-    currentPointColor += getText(uvWithDistortion);
+    currentPointColor += getText(uv);
     // add stripes effect
-    currentPointColor += stripes(uv);
+    // currentPointColor += stripes(uv);
     // apply noise texture
-    currentPointColor += noise(uv);
+    // currentPointColor += noise(uv);
     // apply vignette
-    currentPointColor *= vignette(uv);
+    // currentPointColor *= vignette(uv);
     // apply rainbow effect
     currentPointColor *= rainbow(uv);
 
