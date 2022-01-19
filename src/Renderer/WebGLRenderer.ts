@@ -10,7 +10,7 @@ import {
     Mesh,
     Texture,
     RepeatWrapping,
-    RGBAFormat,
+    RGBFormat,
     Vector2,
     MeshBasicMaterial,
 } from 'three';
@@ -34,10 +34,11 @@ function mapTextToBitMasksArray(text: string = ''): DataTexture {
     for (let index = 0; index < text.length; index++) {
         const symbolPosition = availableSymbols.indexOf(text[index]);
 
-        masks.push(0, symbolPosition, 0, 0);
+        masks.push(symbolPosition, 0, 0);
     }
+    masks.push(0, 0, 0);
 
-    return new DataTexture(new Uint8Array(masks), 972, 1, RGBAFormat);
+    return new DataTexture(new Uint8Array(masks), 973, 1, RGBFormat);
 }
 
 interface IParams {
@@ -69,6 +70,7 @@ export class WebGLRenderer {
             canvas: canvas,
         });
         this.renderer.setSize(params.size.width, params.size.height);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
 
         const ambientLight = new AmbientLight(0xcccccc, 0.7);
         this.scene.add(ambientLight);
@@ -155,9 +157,9 @@ export class WebGLRenderer {
             screen.position.z - 0.01
         );
         screenBackground.scale.set(
-            screen.scale.x + 0.3,
-            screen.scale.y + 0.3,
-            screen.scale.z
+            screen.scale.x + 0.05,
+            screen.scale.y + 0.05,
+            screen.scale.z + 0.05
         );
         screenBackground.rotation.set(
             screen.rotation.x,
