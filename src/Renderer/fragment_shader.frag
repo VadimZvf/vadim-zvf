@@ -5,14 +5,13 @@ uniform sampler2D uTextSprite;
 uniform float uLastCharPosition;
 uniform float uShowCursor;
 uniform float uShowRainbow;
+uniform float uSymbolsPerLineOnScreen;
+uniform float uLinesCountOnScreen;
 uniform float time;
 varying vec2 vTextureCoord;
 
 #define SYMBOLS_PER_LINE_IN_SPRITE 11.0
 #define LINES_COUNT_IN_SPRITE 15.0
-
-#define SYMBOLS_PER_LINE_ON_SCREEN 54.0
-#define LINES_COUNT_ON_SCREEN 18.0
 
 #define TEXT_BRIGHTNESS 2.0
 
@@ -151,7 +150,7 @@ vec4 getCharSpriteColor(float charIndex, vec2 positionInsideSprite) {
 float getCharIndexInSpritesGrid(float charIndexInText) {
     vec4 textureData = texture2D(
         uTextTexture,
-        vec2(charIndexInText / (SYMBOLS_PER_LINE_ON_SCREEN * LINES_COUNT_ON_SCREEN + 1.0), 0.0)
+        vec2(charIndexInText / (uSymbolsPerLineOnScreen * uLinesCountOnScreen + 1.0), 0.0)
     ) * 255.0;
 
     return floor(textureData.x);
@@ -164,8 +163,8 @@ vec4 getText(vec2 uv) {
     );
 
     vec2 symbolSizeOnScreen = vec2(
-        1.0 / SYMBOLS_PER_LINE_ON_SCREEN,
-        1.0 / LINES_COUNT_ON_SCREEN
+        1.0 / uSymbolsPerLineOnScreen,
+        1.0 / uLinesCountOnScreen
     );
 
     // Calculate how match symbols was before current point
@@ -177,7 +176,7 @@ vec4 getText(vec2 uv) {
     );
 
     // Calculate how match 
-    float charIndexInText = bucket.y * SYMBOLS_PER_LINE_ON_SCREEN + bucket.x;
+    float charIndexInText = bucket.y * uSymbolsPerLineOnScreen + bucket.x;
     float charIndexInSpriteGrid = getCharIndexInSpritesGrid(charIndexInText);
 
     // Calculate current point position inside grid

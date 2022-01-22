@@ -69,6 +69,7 @@ export class WebGLRenderer {
         this.renderer = new ThreeJSRenderer({
             canvas: canvas,
         });
+        this.renderer.setClearColor(0xdef8ff);
         this.renderer.setSize(params.size.width, params.size.height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -127,11 +128,15 @@ export class WebGLRenderer {
                 uGlitch: { value: this.glitchTexture },
                 uTextSprite: { value: this.textSpriteTexture },
                 uTextTexture: {
-                    value: mapTextToBitMasksArray(' '.repeat(972)),
+                    value: mapTextToBitMasksArray(
+                        ' '.repeat(config.symbolsPerLine * config.linesCount)
+                    ),
                 },
                 uResolution: {
                     value: new Vector2(896, 704),
                 },
+                uSymbolsPerLineOnScreen: { value: config.symbolsPerLine },
+                uLinesCountOnScreen: { value: config.linesCount },
                 uLastCharPosition: { value: 0 },
                 uShowCursor: { value: 0 },
                 uShowRainbow: { value: 0 },
@@ -221,7 +226,10 @@ export class WebGLRenderer {
             }
         }
 
-        const allScreen = text.padEnd(config.maxSymbolsCount, ' ');
+        const allScreen = text.padEnd(
+            config.linesCount * config.symbolsPerLine,
+            ' '
+        );
 
         this.material.uniforms.uTextTexture.value =
             mapTextToBitMasksArray(allScreen);
