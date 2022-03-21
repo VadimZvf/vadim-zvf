@@ -18,7 +18,7 @@ function openSocialLink(name: string, system: ISystem) {
             break;
 
         default:
-            system.addContent(['Unknown social name']);
+            system.addContent([`Unknown social name - ${name}`]);
             break;
     }
 }
