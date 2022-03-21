@@ -73,7 +73,13 @@ export default class OS {
         if (name && this.programms[name]) {
             this.programmInProgress = this.programms[name](args, this.system);
             this.performCurrentProgram(args);
+            return;
         }
+
+        this.screen.addContent([
+            `Unknown command - ${name}`,
+            'Use "help" to see the list of available commands'
+        ]);
     }
 
     private performCurrentProgram(units: string[]) {
