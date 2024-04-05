@@ -22,7 +22,7 @@
     "@types/jest": "^26.0.23",
     "@types/three": "^0.127.1",
     "cross-env": "^7.0.3",
-    "css-loader": "^5.2.4",
+    "css-loader": "^7.0.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.3.1",
     "jest": "^27.0.4",
