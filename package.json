@@ -14,13 +14,13 @@
   "author": "Vadim Zaynetdinov",
   "license": "ISC",
   "dependencies": {
-    "three": "^0.127.0"
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.14.5",
     "@babel/preset-typescript": "^7.14.5",
     "@types/jest": "^26.0.23",
-    "@types/three": "^0.127.1",
+    "@types/three": "^0.182.0",
     "cross-env": "^7.0.3",
     "css-loader": "^5.2.4",
     "file-loader": "^6.2.0",
