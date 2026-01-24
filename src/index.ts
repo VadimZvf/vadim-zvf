@@ -1,15 +1,19 @@
 import Screen from './Screen';
 import OS from './OS';
-import socials from './OS/programms/socials';
-import help from './OS/programms/help';
-import contacts from './OS/programms/contacts';
-import about from './OS/programms/about';
-import sourceCode from './OS/programms/source_code';
-import show from './OS/programms/show';
-import clear from './OS/programms/clear';
-import rainbow from './OS/programms/rainbow';
-import greeting from './OS/programms/greeting';
-import race from './OS/programms/race';
+import socials from './OS/programs/socials';
+import help from './OS/programs/help';
+import contacts from './OS/programs/contacts';
+import about from './OS/programs/about';
+import sourceCode from './OS/programs/source_code';
+import show from './OS/programs/show';
+import clear from './OS/programs/clear';
+import rainbow from './OS/programs/rainbow';
+import greeting from './OS/programs/greeting';
+import race from './OS/programs/race';
+import ls from './OS/programs/ls';
+import pwd from './OS/programs/pwd';
+import mkdir from './OS/programs/mkdir';
+import cd from './OS/programs/cd';
 import Renderer from './Renderer';
 import Input from './Input';
 import './index.css';
@@ -25,6 +29,10 @@ const programs = [
     rainbow,
     greeting,
     race,
+    ls,
+    pwd,
+    mkdir,
+    cd,
 ];
 
 function init() {
@@ -32,7 +40,7 @@ function init() {
 
     const os = new OS(screen, programs);
 
-    os.runProgramm('greeting', []);
+    os.runProgram('greeting', []);
 }
 
 init();

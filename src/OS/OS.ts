@@ -29,26 +29,22 @@ export default class OS {
 
         this.screen = screen;
         this.system = this.createSystem();
-        this.loadProgramms(propgrams);
+        this.loadPrograms(propgrams);
 
         screen.subscribeCommand(this.handleCommand);
     }
 
     screen: IScreen;
     system: ISystem;
-    programms: {
-        [programmsName: string]: IProgram;
+    programs: {
+        [programsName: string]: IProgram;
     } = {};
-    programmInProgress: IProgramIterator | void;
+    programInProgress: IProgramIterator | void;
     systemApiInProgress: string | null = null;
 
-    public runProgramm(name: string, args: string[]) {
-        this.runProgram(name, args);
-    }
-
-    private loadProgramms(programs: IProgramDefinition[]) {
+    private loadPrograms(programs: IProgramDefinition[]) {
         for (const programInfo of programs) {
-            this.programms[programInfo.name] = programInfo.program;
+            this.programs[programInfo.name] = programInfo.program;
         }
     }
 
@@ -59,38 +55,38 @@ export default class OS {
             this.performSystemApi();
         }
 
-        if (this.programmInProgress) {
+        if (this.programInProgress) {
             this.performCurrentProgram(units);
             return;
         }
 
-        const [programmName, ...args] = units;
+        const [programName, ...args] = units;
 
-        this.runProgram(programmName, args);
+        this.runProgram(programName, args);
     }
 
-    private runProgram(name: string, args: string[]) {
-        if (name && this.programms[name]) {
-            this.programmInProgress = this.programms[name](args, this.system);
+    public runProgram(name: string, args: string[]) {
+        if (name && this.programs[name]) {
+            this.programInProgress = this.programs[name](args, this.system);
             this.performCurrentProgram(args);
             return;
         }
 
         this.screen.addContent([
             `Unknown command - ${name}`,
-            'Use "help" to see the list of available commands'
+            'Use "help" to see the list of available commands',
         ]);
     }
 
     private performCurrentProgram(units: string[]) {
-        if (!this.programmInProgress) {
+        if (!this.programInProgress) {
             return;
         }
 
-        const result = this.programmInProgress.next(units);
+        const result = this.programInProgress.next(units);
 
         if (result.done) {
-            this.programmInProgress = null;
+            this.programInProgress = null;
             return;
         }
 
@@ -99,7 +95,7 @@ export default class OS {
         }
     }
 
-    // TODO: reafactor
+    // TODO: refactor
     private applySystemAPI(request: IRequestTextFiber) {
         if (!request) {
             return;
