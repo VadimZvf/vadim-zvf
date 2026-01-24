@@ -2,8 +2,6 @@ import Screen, { IRenderer, IInput } from './Screen';
 
 const fakeRenderer: IRenderer = {
     setContent() {},
-    enableCursor() {},
-    disableCursor() {},
     toggleRainbowEffect() {},
 };
 

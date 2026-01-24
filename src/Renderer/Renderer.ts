@@ -19,7 +19,7 @@ class Renderer {
     webGLRenderer: WebGLRenderer;
 
     private init() {
-        window.addEventListener('resize', this.handleResize)
+        window.addEventListener('resize', this.handleResize);
 
         this.render();
     }
@@ -40,14 +40,6 @@ class Renderer {
 
     public setContent(lines: string[]) {
         this.webGLRenderer.setLines(lines);
-    }
-
-    public enableCursor() {
-        this.webGLRenderer.enableCursor();
-    }
-
-    public disableCursor() {
-        this.webGLRenderer.disableCursor();
     }
 
     public toggleRainbowEffect() {

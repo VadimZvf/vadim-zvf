@@ -7,6 +7,5 @@ export default createProgram('greeting', function* (args, system) {
         'My name is Vadim and this is my petproject',
         '',
         'If U need help, just write command - help',
-        '',
     ]);
 });

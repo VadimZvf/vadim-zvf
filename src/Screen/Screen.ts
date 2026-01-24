@@ -2,8 +2,6 @@ import rendererConfig from '../Renderer/config';
 
 export interface IRenderer {
     setContent(lines: string[]): void;
-    enableCursor(): void;
-    disableCursor(): void;
     toggleRainbowEffect(): void;
 }
 
@@ -38,6 +36,8 @@ export default class Screen {
         this.input.subscribeBlurEvent(this.onBlur);
         this.input.subscribeEnterKeyEvent(this.onEnter);
         this.commandListeners = [];
+
+        window.requestAnimationFrame(this.update.bind(this));
     }
 
     private renderer: IRenderer;
@@ -45,6 +45,8 @@ export default class Screen {
     private commandListeners: Array<(command: string) => void>;
 
     private static defaultInputArrow = '>';
+    private static cursorSymbol = '█';
+    private static cursorBlinkInterval = 500;
 
     // Screen text contet
     private content: string[] = [];
@@ -52,6 +54,8 @@ export default class Screen {
     private typedText: string = '';
     // Some symbol, or text before typed text
     private inputArrow: string = Screen.defaultInputArrow;
+    private isFocused: boolean = false;
+    private cursorVisible: boolean = false;
 
     public subscribeCommand(listener: (command: string) => void) {
         this.commandListeners.push(listener);
@@ -136,16 +140,18 @@ export default class Screen {
     }
 
     private onFocus() {
-        this.renderer.enableCursor();
+        this.isFocused = true;
+        this.updateRenderer();
     }
 
     private onBlur() {
-        this.renderer.disableCursor();
+        this.isFocused = false;
+        this.updateRenderer();
     }
 
     private checkLinesCount() {
-        // We shoult remove one more line
-        // because we wonna show typed line
+        // We should remove one more line
+        // because we wont to show typed line
         if (this.content.length >= rendererConfig.linesCount) {
             this.content = this.content.slice(
                 this.content.length - rendererConfig.linesCount + 1
@@ -153,9 +159,21 @@ export default class Screen {
         }
     }
 
+    private update(time: number) {
+        if (this.isFocused) {
+            this.cursorVisible =
+                Math.floor(time / Screen.cursorBlinkInterval) % 2 === 0;
+            this.updateRenderer();
+        }
+
+        window.requestAnimationFrame(this.update.bind(this));
+    }
+
     private updateRenderer() {
-        this.renderer.setContent(
-            this.content.concat([`${this.inputArrow}${this.typedText}`])
-        );
+        const content = this.content.concat([
+            `${this.inputArrow}${this.typedText}${this.cursorVisible ? Screen.cursorSymbol : ''}`,
+        ]);
+
+        this.renderer.setContent(content);
     }
 }

@@ -1,12 +1,9 @@
 precision highp float;
 uniform sampler2D uGlitch;
-uniform sampler2D uTextTexture;
-uniform sampler2D uTextSprite;
-uniform float uLastCharPosition;
-uniform float uShowCursor;
 uniform float uShowRainbow;
 uniform float uSymbolsPerLineOnScreen;
 uniform float uLinesCountOnScreen;
+uniform sampler2D uScreenTexture;
 uniform float time;
 varying vec2 vTextureCoord;
 
@@ -121,84 +118,8 @@ vec4 rainbow(vec2 uv) {
     return uShowRainbow == 1.0 ? vec4(color, 1.0) : vec4(1.0);
 }
 
-// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃       Text rendering       ┃
-// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-// Prints a character.
-vec4 getCharSpriteColor(float charIndex, vec2 positionInsideSprite) {
-    vec2 symbolPositionInGrid = vec2(
-        mod(charIndex, SYMBOLS_PER_LINE_IN_SPRITE),
-        floor(charIndex / SYMBOLS_PER_LINE_IN_SPRITE)
-    );
-
-    vec2 symbolSizeInGreen = vec2(
-        1.0 / SYMBOLS_PER_LINE_IN_SPRITE,
-        1.0 / LINES_COUNT_IN_SPRITE
-    );
-
-    vec4 symbolColorFromTexture = texture2D(
-        uTextSprite,
-        vec2(
-            symbolPositionInGrid.x / SYMBOLS_PER_LINE_IN_SPRITE + positionInsideSprite.x * symbolSizeInGreen.x,
-            1.0 - (symbolPositionInGrid.y / LINES_COUNT_IN_SPRITE + positionInsideSprite.y * symbolSizeInGreen.y)
-        )
-    );
-
-    return symbolColorFromTexture * TEXT_BRIGHTNESS;
-}
-
-float getCharIndexInSpritesGrid(float charIndexInText) {
-    vec4 textureData = texture2D(
-        uTextTexture,
-        vec2(charIndexInText / (uSymbolsPerLineOnScreen * uLinesCountOnScreen + 1.0), 0.0)
-    ) * 255.0;
-
-    return floor(textureData.x);
-}
-
 vec4 getText(vec2 uv) {
-    vec2 invertedUv = vec2(
-        uv.x,
-        1.0 - uv.y
-    );
-
-    vec2 symbolSizeOnScreen = vec2(
-        1.0 / uSymbolsPerLineOnScreen,
-        1.0 / uLinesCountOnScreen
-    );
-
-    // Calculate how match symbols was before current point
-    vec2 bucket = floor(
-        vec2(
-            invertedUv.x / symbolSizeOnScreen.x,
-            invertedUv.y / symbolSizeOnScreen.y
-        )
-    );
-
-    // Calculate how match 
-    float charIndexInText = bucket.y * uSymbolsPerLineOnScreen + bucket.x;
-    float charIndexInSpriteGrid = getCharIndexInSpritesGrid(charIndexInText);
-
-    // Calculate current point position inside grid
-    vec2 cursor = floor(invertedUv / symbolSizeOnScreen) * symbolSizeOnScreen;
-    vec2 positionInsideSprite = vec2(
-        (invertedUv.x - cursor.x) / symbolSizeOnScreen.x,
-        (invertedUv.y - cursor.y) / symbolSizeOnScreen.y
-    );
-
-    // Check that point inside char
-    if (positionInsideSprite.x <= 0.1 || positionInsideSprite.y <= 0.1 || positionInsideSprite.x >= 0.9 || positionInsideSprite.y >= 0.9) {
-        return vec4(0.0);
-    }
-
-    // Render char
-    vec4 charColor = getCharSpriteColor(charIndexInSpriteGrid, positionInsideSprite);
-
-    // Render cursor
-    float isLastChar = 1.0 - step(0.5, abs(uLastCharPosition - charIndexInText));
-    charColor += vec4(1.0) * uShowCursor * isLastChar * sin(time / 6.0);
-
-    return charColor;
+    return texture2D(uScreenTexture, uv);
 }
 
 void main(void) {

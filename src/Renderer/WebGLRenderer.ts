@@ -6,63 +6,19 @@ import {
     WebGLRenderer as ThreeJSRenderer,
     PlaneGeometry,
     ShaderMaterial,
-    DataTexture,
     Mesh,
     Texture,
     RepeatWrapping,
-    MirroredRepeatWrapping,
-    RGBAFormat,
     Vector2,
     MeshBasicMaterial,
-    UVMapping,
-    UnsignedByteType,
+    CanvasTexture,
 } from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import glitchImage from '../glitch.png?url';
-import textSpriteImage from './text_sprite.png?url';
 import config from './config';
 import mac from './models/fbx/mac.fbx?url';
 import fragmentShader from './fragment_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
-
-const availableSymbols =
-    '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя█░ ';
-
-/// OMG OMG!!
-// We send text data to shader as Texture!
-// because text is so long, and not all browsers allow use such long Arrays in shader
-function mapTextToBitMasksArray(text: string = ''): DataTexture {
-    const width = text.length + 1;
-    const data = new Uint8Array(4 * width);
-
-    for (let index = 0; index < text.length; index++) {
-        const symbolPosition = availableSymbols.indexOf(text[index]);
-        const stride = index * 4;
-        data[stride] = symbolPosition;
-        data[stride + 1] = 0;
-        data[stride + 2] = 0;
-        data[stride + 3] = 255;
-    }
-
-    data[text.length * 4] = 0;
-    data[text.length * 4 + 1] = 0;
-    data[text.length * 4 + 2] = 0;
-    data[text.length * 4 + 3] = 255;
-
-    const dataTexture = new DataTexture(
-        data,
-        width,
-        1,
-        RGBAFormat,
-        UnsignedByteType,
-        UVMapping,
-        MirroredRepeatWrapping,
-        MirroredRepeatWrapping
-    );
-    dataTexture.needsUpdate = true;
-
-    return dataTexture;
-}
 
 interface IParams {
     size: {
@@ -74,6 +30,30 @@ interface IParams {
 export class WebGLRenderer {
     constructor(params: IParams) {
         this.handleMouseMove = this.handleMouseMove.bind(this);
+
+        const screenCanvas = document.createElement('canvas');
+        screenCanvas.style.position = 'absolute';
+        screenCanvas.style.top = '-100%';
+        screenCanvas.style.left = '-100%';
+        screenCanvas.style.opacity = '0';
+        document.body.appendChild(screenCanvas);
+        this.screenCanvasCtx = screenCanvas.getContext('2d');
+
+        this.screenCanvasCtx.font = `${config.fontSize}px monospace`;
+        this.screenCanvasCtx.fillStyle = 'white';
+        this.screenCanvasCtx.textBaseline = 'top';
+        const testSymbol = this.screenCanvasCtx.measureText('M');
+        const symbolWidth = testSymbol.width;
+        this.screenLineHeight =
+            testSymbol.fontBoundingBoxDescent +
+            testSymbol.fontBoundingBoxAscent;
+        const screenWidth = symbolWidth * config.symbolsPerLine;
+        const screenHeight = this.screenLineHeight * config.linesCount;
+
+        screenCanvas.width = screenWidth;
+        screenCanvas.height = screenHeight;
+
+        this.screenTexture = new CanvasTexture(screenCanvas);
 
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
@@ -113,7 +93,9 @@ export class WebGLRenderer {
     private renderer: ThreeJSRenderer;
     private material: ShaderMaterial;
     private glitchTexture: Texture;
-    private textSpriteTexture: Texture;
+    private screenTexture: CanvasTexture;
+    private screenCanvasCtx: CanvasRenderingContext2D;
+    private screenLineHeight: number;
 
     private vertexShader = vertexShader;
     private fragmentShader = fragmentShader;
@@ -134,7 +116,6 @@ export class WebGLRenderer {
         this.glitchTexture = new Texture();
         this.glitchTexture.wrapS = RepeatWrapping;
         this.glitchTexture.wrapT = RepeatWrapping;
-        this.textSpriteTexture = new Texture();
 
         const screenBackgroundGeometry = new PlaneGeometry(896, 704);
         const screenBackgroundMaterial = new MeshBasicMaterial({
@@ -149,19 +130,12 @@ export class WebGLRenderer {
         this.material = new ShaderMaterial({
             uniforms: {
                 uGlitch: { value: this.glitchTexture },
-                uTextSprite: { value: this.textSpriteTexture },
-                uTextTexture: {
-                    value: mapTextToBitMasksArray(
-                        ' '.repeat(config.symbolsPerLine * config.linesCount)
-                    ),
-                },
+                uScreenTexture: { value: this.screenTexture },
                 uResolution: {
                     value: new Vector2(896, 704),
                 },
                 uSymbolsPerLineOnScreen: { value: config.symbolsPerLine },
                 uLinesCountOnScreen: { value: config.linesCount },
-                uLastCharPosition: { value: 0 },
-                uShowCursor: { value: 0 },
                 uShowRainbow: { value: 0 },
                 time: { value: 0 },
             },
@@ -200,21 +174,6 @@ export class WebGLRenderer {
 
         const loader = new FBXLoader();
         loader.load(mac, (object) => {
-            console.log(object);
-            object.traverse(function (child) {
-                if (child instanceof Mesh && child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    // Fix for negative material indices in FBX
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material = child.material.filter(
-                                (mat) => mat !== null && mat !== undefined
-                            );
-                        }
-                    }
-                }
-            });
             object.scale.x = 0.4;
             object.scale.y = 0.4;
             object.scale.z = 0.4;
@@ -222,7 +181,6 @@ export class WebGLRenderer {
         });
 
         this.loadGlichTexture();
-        this.loadTextSpriteTexture();
     }
 
     public setLines(lines: string[]) {
@@ -232,13 +190,21 @@ export class WebGLRenderer {
             );
         }
 
-        let text = '';
-        let lastSymbolPosition = 0;
+        this.screenCanvasCtx.clearRect(
+            0,
+            0,
+            this.screenCanvasCtx.canvas.width,
+            this.screenCanvasCtx.canvas.height
+        );
+
+        this.screenCanvasCtx.font = `${config.fontSize}px monospace`;
+        this.screenCanvasCtx.fillStyle = 'white';
+        this.screenCanvasCtx.textBaseline = 'top';
 
         const croppedLines = lines.slice(0, config.linesCount);
 
         for (let index = 0; index < croppedLines.length; index++) {
-            let line = lines[index].padEnd(config.symbolsPerLine, ' ');
+            let line = lines[index];
 
             if (line.length > config.symbolsPerLine) {
                 console.warn(
@@ -246,34 +212,14 @@ export class WebGLRenderer {
                 );
             }
 
-            text += line;
-
-            // Fill all lines to line max length
-            // only NOT for last line
-            // Because we should know, where to put input cursor
-            if (index !== lines.length - 1) {
-                lastSymbolPosition += line.length;
-            } else {
-                lastSymbolPosition += lines[index].length;
-            }
+            this.screenCanvasCtx.fillText(
+                line,
+                0,
+                this.screenLineHeight * index
+            );
         }
 
-        const allScreen = text.padEnd(
-            config.linesCount * config.symbolsPerLine,
-            ' '
-        );
-
-        this.material.uniforms.uTextTexture.value =
-            mapTextToBitMasksArray(allScreen);
-        this.material.uniforms.uLastCharPosition.value = lastSymbolPosition;
-    }
-
-    public enableCursor() {
-        this.material.uniforms.uShowCursor.value = 1;
-    }
-
-    public disableCursor() {
-        this.material.uniforms.uShowCursor.value = 0;
+        this.screenTexture.needsUpdate = true;
     }
 
     public toggleRainbowEffect() {
@@ -288,12 +234,6 @@ export class WebGLRenderer {
         const image = await this.loadImage(glitchImage);
         this.glitchTexture.image = image;
         this.glitchTexture.needsUpdate = true;
-    }
-
-    private async loadTextSpriteTexture() {
-        const image = await this.loadImage(textSpriteImage);
-        this.textSpriteTexture.image = image;
-        this.textSpriteTexture.needsUpdate = true;
     }
 
     private async loadImage(path: string): Promise<HTMLImageElement> {
