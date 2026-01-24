@@ -10,17 +10,20 @@ import {
     Mesh,
     Texture,
     RepeatWrapping,
-    RGBFormat,
+    MirroredRepeatWrapping,
+    RGBAFormat,
     Vector2,
     MeshBasicMaterial,
+    UVMapping,
+    UnsignedByteType,
 } from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import glitchImage from '../glitch.png';
-import textSpriteImage from './text_sprite.png';
+import glitchImage from '../glitch.png?url';
+import textSpriteImage from './text_sprite.png?url';
 import config from './config';
-import mac from './models/fbx/mac.fbx';
-import fragmentShader from './fragment_shader.frag';
-import vertexShader from './vertex_shader.frag';
+import mac from './models/fbx/mac.fbx?url';
+import fragmentShader from './fragment_shader.frag?raw';
+import vertexShader from './vertex_shader.frag?raw';
 
 const availableSymbols =
     '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя█░ ';
@@ -29,16 +32,36 @@ const availableSymbols =
 // We send text data to shader as Texture!
 // because text is so long, and not all browsers allow use such long Arrays in shader
 function mapTextToBitMasksArray(text: string = ''): DataTexture {
-    const masks = [];
+    const width = text.length + 1;
+    const data = new Uint8Array(4 * width);
 
     for (let index = 0; index < text.length; index++) {
         const symbolPosition = availableSymbols.indexOf(text[index]);
-
-        masks.push(symbolPosition, 0, 0);
+        const stride = index * 4;
+        data[stride] = symbolPosition;
+        data[stride + 1] = 0;
+        data[stride + 2] = 0;
+        data[stride + 3] = 255;
     }
-    masks.push(0, 0, 0);
 
-    return new DataTexture(new Uint8Array(masks), 973, 1, RGBFormat);
+    data[text.length * 4] = 0;
+    data[text.length * 4 + 1] = 0;
+    data[text.length * 4 + 2] = 0;
+    data[text.length * 4 + 3] = 255;
+
+    const dataTexture = new DataTexture(
+        data,
+        width,
+        1,
+        RGBAFormat,
+        UnsignedByteType,
+        UVMapping,
+        MirroredRepeatWrapping,
+        MirroredRepeatWrapping
+    );
+    dataTexture.needsUpdate = true;
+
+    return dataTexture;
 }
 
 interface IParams {
@@ -177,10 +200,19 @@ export class WebGLRenderer {
 
         const loader = new FBXLoader();
         loader.load(mac, (object) => {
+            console.log(object);
             object.traverse(function (child) {
                 if (child instanceof Mesh && child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
+                    // Fix for negative material indices in FBX
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material = child.material.filter(
+                                (mat) => mat !== null && mat !== undefined
+                            );
+                        }
+                    }
                 }
             });
             object.scale.x = 0.4;
@@ -203,9 +235,9 @@ export class WebGLRenderer {
         let text = '';
         let lastSymbolPosition = 0;
 
-        const croupedLines = lines.slice(0, config.linesCount);
+        const croppedLines = lines.slice(0, config.linesCount);
 
-        for (let index = 0; index < croupedLines.length; index++) {
+        for (let index = 0; index < croppedLines.length; index++) {
             let line = lines[index].padEnd(config.symbolsPerLine, ' ');
 
             if (line.length > config.symbolsPerLine) {
@@ -218,7 +250,7 @@ export class WebGLRenderer {
 
             // Fill all lines to line max length
             // only NOT for last line
-            // Becouse we shold know, where to put input cursor
+            // Because we should know, where to put input cursor
             if (index !== lines.length - 1) {
                 lastSymbolPosition += line.length;
             } else {

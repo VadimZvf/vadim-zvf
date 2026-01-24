@@ -1,9 +1,9 @@
-declare module '*.jpeg' {
+declare module '*.jpeg?url' {
     const content: string;
     export default content;
 }
 
-declare module '*.png' {
+declare module '*.png?url' {
     const content: string;
     export default content;
 }
@@ -13,17 +13,17 @@ declare module '*.svg' {
     export default content;
 }
 
-declare module '*.frag' {
+declare module '*.frag?raw' {
     const content: string;
     export default content;
 }
 
-declare module '*.fbx' {
+declare module '*.fbx?url' {
     const content: string;
     export default content;
 }
 
-declare module '*.obj' {
+declare module '*.obj?url' {
     const content: string;
     export default content;
 }
