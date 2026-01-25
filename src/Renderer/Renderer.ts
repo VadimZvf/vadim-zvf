@@ -21,11 +21,11 @@ class Renderer {
     private init() {
         window.addEventListener('resize', this.handleResize);
 
-        this.render();
+        this.render(Date.now());
     }
 
-    private render() {
-        this.webGLRenderer.render();
+    private render(timeMs: number) {
+        this.webGLRenderer.render(timeMs);
 
         window.requestAnimationFrame(this.render);
     }

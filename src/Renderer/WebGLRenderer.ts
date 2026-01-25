@@ -40,13 +40,27 @@ export class WebGLRenderer {
     }
 
     private renderCanvas: HTMLCanvasElement;
+    private renderProgram: WebGLProgram;
     private gl: WebGLRenderingContext;
 
     private screenTexture: WebGLTexture;
     private screenCanvasCtx: CanvasRenderingContext2D;
     private screenLineHeight: number;
 
-    public render() {}
+    public render(timeMs: number) {
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenTexture);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(this.renderProgram, 'uScreenTexture'),
+            0
+        );
+
+        this.gl.uniform1f(
+            this.gl.getUniformLocation(this.renderProgram, 'time'),
+            timeMs
+        );
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    }
 
     public setSize(size: { width: number; height: number }) {
         this.renderCanvas.width = size.width;
@@ -67,47 +81,31 @@ export class WebGLRenderer {
             1, 1,
         ]);
 
-        const program = this.gl.createProgram();
+        this.renderProgram = this.gl.createProgram();
         this.gl.attachShader(
-            program,
+            this.renderProgram,
             this.createShader(this.gl.VERTEX_SHADER, vertexShader)
         );
         this.gl.attachShader(
-            program,
+            this.renderProgram,
             this.createShader(this.gl.FRAGMENT_SHADER, fragmentShader)
         );
-        this.gl.linkProgram(program);
+        this.gl.linkProgram(this.renderProgram);
 
-        this.gl.useProgram(program);
+        this.gl.useProgram(this.renderProgram);
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
-        const a_position = this.gl.getAttribLocation(program, 'a_position');
+        const a_position = this.gl.getAttribLocation(
+            this.renderProgram,
+            'a_position'
+        );
         this.gl.enableVertexAttribArray(a_position);
         this.gl.vertexAttribPointer(a_position, 2, this.gl.FLOAT, false, 0, 0);
 
         const screenCanvas = this.screenCanvasCtx.canvas;
         this.screenTexture = this.createTexture(screenCanvas);
-
-        function draw(timeMs: number) {
-            this.gl.activeTexture(this.gl.TEXTURE0);
-            this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenTexture);
-            this.gl.uniform1i(
-                this.gl.getUniformLocation(program, 'uScreenTexture'),
-                0
-            );
-
-            this.gl.uniform1f(
-                this.gl.getUniformLocation(program, 'time'),
-                timeMs
-            );
-            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-
-            requestAnimationFrame(draw.bind(this));
-        }
-
-        requestAnimationFrame(draw.bind(this));
     }
 
     public setLines(lines: string[]) {
