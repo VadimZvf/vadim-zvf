@@ -13,12 +13,8 @@
     ],
     "author": "Vadim Zaynetdinov",
     "license": "ISC",
-    "dependencies": {
-        "three": "^0.182.0"
-    },
     "devDependencies": {
         "@types/jest": "^26.0.23",
-        "@types/three": "^0.182.0",
         "jest": "^27.0.4",
         "typescript": "^5.9.3",
         "vite": "^7.3.1"

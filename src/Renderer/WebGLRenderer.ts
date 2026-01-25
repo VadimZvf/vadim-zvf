@@ -1,22 +1,4 @@
-import {
-    Scene,
-    PerspectiveCamera,
-    PointLight,
-    AmbientLight,
-    WebGLRenderer as ThreeJSRenderer,
-    PlaneGeometry,
-    ShaderMaterial,
-    Mesh,
-    Texture,
-    RepeatWrapping,
-    Vector2,
-    MeshBasicMaterial,
-    CanvasTexture,
-} from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import glitchImage from '../glitch.png?url';
 import config from './config';
-import mac from './models/fbx/mac.fbx?url';
 import fragmentShader from './fragment_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
 
@@ -29,8 +11,6 @@ interface IParams {
 
 export class WebGLRenderer {
     constructor(params: IParams) {
-        this.handleMouseMove = this.handleMouseMove.bind(this);
-
         const screenCanvas = document.createElement('canvas');
         screenCanvas.style.position = 'absolute';
         screenCanvas.style.top = '-100%';
@@ -53,134 +33,81 @@ export class WebGLRenderer {
         screenCanvas.width = screenWidth;
         screenCanvas.height = screenHeight;
 
-        this.screenTexture = new CanvasTexture(screenCanvas);
-
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
-
-        this.scene = new Scene();
-        this.camera = new PerspectiveCamera(
-            70,
-            params.size.width / params.size.height,
-            1,
-            2000
-        );
-        this.camera.position.z = 460;
-        this.camera.lookAt(this.scene.position);
-        this.camera.updateProjectionMatrix();
-
-        this.renderer = new ThreeJSRenderer({
-            canvas: canvas,
-        });
-        this.renderer.setClearColor(0xdef8ff);
-        this.renderer.setSize(params.size.width, params.size.height);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-
-        const ambientLight = new AmbientLight(0xcccccc, 0.7);
-        this.scene.add(ambientLight);
-
-        const pointLight = new PointLight(0xffffff, 0.8);
-        pointLight.position.y = 260;
-        pointLight.position.z = 20;
-        this.camera.add(pointLight);
-        this.scene.add(this.camera);
-
-        document.addEventListener('mousemove', this.handleMouseMove);
+        this.renderCanvas = canvas;
+        this.setSize(params.size);
     }
 
-    private camera: PerspectiveCamera;
-    private scene: Scene;
-    private renderer: ThreeJSRenderer;
-    private material: ShaderMaterial;
-    private glitchTexture: Texture;
-    private screenTexture: CanvasTexture;
+    private renderCanvas: HTMLCanvasElement;
+    private gl: WebGLRenderingContext;
+
+    private screenTexture: WebGLTexture;
     private screenCanvasCtx: CanvasRenderingContext2D;
     private screenLineHeight: number;
 
-    private vertexShader = vertexShader;
-    private fragmentShader = fragmentShader;
-
-    public render() {
-        this.material.uniforms.time.value =
-            this.material.uniforms.time.value + 1;
-        this.renderer.render(this.scene, this.camera);
-    }
+    public render() {}
 
     public setSize(size: { width: number; height: number }) {
-        this.camera.aspect = size.width / size.height;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(size.width, size.height);
+        this.renderCanvas.width = size.width;
+        this.renderCanvas.height = size.height;
     }
 
     public createScreen() {
-        this.glitchTexture = new Texture();
-        this.glitchTexture.wrapS = RepeatWrapping;
-        this.glitchTexture.wrapT = RepeatWrapping;
+        this.gl = this.renderCanvas.getContext('webgl');
 
-        const screenBackgroundGeometry = new PlaneGeometry(896, 704);
-        const screenBackgroundMaterial = new MeshBasicMaterial({
-            color: 0x000000,
-        });
-        const screenBackground = new Mesh(
-            screenBackgroundGeometry,
-            screenBackgroundMaterial
+        const vertices = new Float32Array([
+            // bottom left
+            -1, -1,
+            // bottom right
+            1, -1,
+            // top left
+            -1, 1,
+            // top right
+            1, 1,
+        ]);
+
+        const program = this.gl.createProgram();
+        this.gl.attachShader(
+            program,
+            this.createShader(this.gl.VERTEX_SHADER, vertexShader)
         );
-
-        const geometry = new PlaneGeometry(896, 704);
-        this.material = new ShaderMaterial({
-            uniforms: {
-                uGlitch: { value: this.glitchTexture },
-                uScreenTexture: { value: this.screenTexture },
-                uResolution: {
-                    value: new Vector2(896, 704),
-                },
-                uSymbolsPerLineOnScreen: { value: config.symbolsPerLine },
-                uLinesCountOnScreen: { value: config.linesCount },
-                uShowRainbow: { value: 0 },
-                time: { value: 0 },
-            },
-            vertexShader: this.vertexShader,
-            fragmentShader: this.fragmentShader,
-        });
-        const screen = new Mesh(geometry, this.material);
-        screen.position.x = 0;
-        screen.position.y = 67;
-        screen.position.z = 128;
-        screen.scale.x = 0.24;
-        screen.scale.y = 0.24;
-        screen.scale.z = 0.22;
-        screen.rotation.x = -Math.PI / 25;
-        screen.rotation.y = 0;
-        screen.rotation.z = 0;
-
-        screenBackground.position.set(
-            screen.position.x,
-            screen.position.y,
-            screen.position.z - 0.01
+        this.gl.attachShader(
+            program,
+            this.createShader(this.gl.FRAGMENT_SHADER, fragmentShader)
         );
-        screenBackground.scale.set(
-            screen.scale.x + 0.05,
-            screen.scale.y + 0.05,
-            screen.scale.z + 0.05
-        );
-        screenBackground.rotation.set(
-            screen.rotation.x,
-            screen.rotation.y,
-            screen.rotation.z
-        );
+        this.gl.linkProgram(program);
 
-        this.scene.add(screenBackground);
-        this.scene.add(screen);
+        this.gl.useProgram(program);
 
-        const loader = new FBXLoader();
-        loader.load(mac, (object) => {
-            object.scale.x = 0.4;
-            object.scale.y = 0.4;
-            object.scale.z = 0.4;
-            this.scene.add(object);
-        });
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
-        this.loadGlichTexture();
+        const a_position = this.gl.getAttribLocation(program, 'a_position');
+        this.gl.enableVertexAttribArray(a_position);
+        this.gl.vertexAttribPointer(a_position, 2, this.gl.FLOAT, false, 0, 0);
+
+        const screenCanvas = this.screenCanvasCtx.canvas;
+        this.screenTexture = this.createTexture(screenCanvas);
+
+        function draw(timeMs: number) {
+            this.gl.activeTexture(this.gl.TEXTURE0);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenTexture);
+            this.gl.uniform1i(
+                this.gl.getUniformLocation(program, 'uScreenTexture'),
+                0
+            );
+
+            this.gl.uniform1f(
+                this.gl.getUniformLocation(program, 'time'),
+                timeMs
+            );
+            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+            requestAnimationFrame(draw.bind(this));
+        }
+
+        requestAnimationFrame(draw.bind(this));
     }
 
     public setLines(lines: string[]) {
@@ -219,41 +146,67 @@ export class WebGLRenderer {
             );
         }
 
-        this.screenTexture.needsUpdate = true;
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenTexture);
+        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+
+        this.gl.texSubImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            0,
+            0,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            this.screenCanvasCtx.canvas
+        );
     }
 
     public toggleRainbowEffect() {
-        if (this.material.uniforms.uShowRainbow.value) {
-            this.material.uniforms.uShowRainbow.value = 0;
-        } else {
-            this.material.uniforms.uShowRainbow.value = 1;
-        }
+        console.log('toggleRainbowEffect');
     }
 
-    private async loadGlichTexture() {
-        const image = await this.loadImage(glitchImage);
-        this.glitchTexture.image = image;
-        this.glitchTexture.needsUpdate = true;
+    private createTexture(source: HTMLCanvasElement) {
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        let texture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_MIN_FILTER,
+            this.gl.NEAREST
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_MAG_FILTER,
+            this.gl.NEAREST
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_WRAP_S,
+            this.gl.CLAMP_TO_EDGE
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_WRAP_T,
+            this.gl.CLAMP_TO_EDGE
+        );
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            source
+        );
+
+        return texture;
     }
 
-    private async loadImage(path: string): Promise<HTMLImageElement> {
-        return new Promise((resolve) => {
-            const image = new Image();
-            image.src = path;
-
-            image.onload = () => {
-                resolve(image);
-            };
-        });
-    }
-
-    private handleMouseMove(event: MouseEvent) {
-        const mouseX = (event.clientX - window.innerWidth / 2) / 5;
-        const mouseY = (event.clientY - window.innerHeight / 2) / 5;
-
-        this.camera.position.x += mouseX - this.camera.position.x;
-        this.camera.position.y += -mouseY - this.camera.position.y;
-        this.camera.lookAt(this.scene.position);
+    private createShader(type: number, src: string) {
+        const s = this.gl.createShader(type);
+        this.gl.shaderSource(s, src);
+        this.gl.compileShader(s);
+        if (!this.gl.getShaderParameter(s, this.gl.COMPILE_STATUS))
+            console.error(this.gl.getShaderInfoLog(s));
+        return s;
     }
 }
 

@@ -5,7 +5,7 @@ uniform float uSymbolsPerLineOnScreen;
 uniform float uLinesCountOnScreen;
 uniform sampler2D uScreenTexture;
 uniform float time;
-varying vec2 vTextureCoord;
+varying vec2 v_uv;
 
 #define SYMBOLS_PER_LINE_IN_SPRITE 11.0
 #define LINES_COUNT_IN_SPRITE 15.0
@@ -124,23 +124,22 @@ vec4 getText(vec2 uv) {
 
 void main(void) {
     // Real point
-    vec2 uv = vTextureCoord;
     vec4 currentPointColor = vec4(0.0);
 
     // Apply fisheye effect, and distortion effect
-    // vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(uv);
-    // vec2 uvWithDistortion = getDistortedCoords(uv);
+    // vec2 fisheyedCoords = getOffsetCoordinatesByFisheye(v_uv);
+    vec2 uvWithDistortion = getDistortedCoords(v_uv);
 
     // Add text
-    currentPointColor += getText(uv);
+    currentPointColor += getText(uvWithDistortion);
     // add stripes effect
-    // currentPointColor += stripes(uv);
+    currentPointColor += stripes(uvWithDistortion);
     // apply noise texture
-    // currentPointColor += noise(uv);
+    currentPointColor += noise(uvWithDistortion);
     // apply vignette
-    // currentPointColor *= vignette(uv);
+    currentPointColor *= vignette(uvWithDistortion);
     // apply rainbow effect
-    currentPointColor *= rainbow(uv);
+    currentPointColor *= rainbow(uvWithDistortion);
 
     gl_FragColor = currentPointColor;
 }
