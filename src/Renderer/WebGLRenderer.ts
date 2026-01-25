@@ -46,6 +46,7 @@ export class WebGLRenderer {
     private screenTexture: WebGLTexture;
     private screenCanvasCtx: CanvasRenderingContext2D;
     private screenLineHeight: number;
+    private isRainbowEffectEnabled: boolean = false;
 
     public render(timeMs: number) {
         this.gl.activeTexture(this.gl.TEXTURE0);
@@ -56,8 +57,13 @@ export class WebGLRenderer {
         );
 
         this.gl.uniform1f(
+            this.gl.getUniformLocation(this.renderProgram, 'uShowRainbow'),
+            this.isRainbowEffectEnabled ? 1 : 0
+        );
+
+        this.gl.uniform1f(
             this.gl.getUniformLocation(this.renderProgram, 'time'),
-            timeMs
+            timeMs / 100
         );
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -159,7 +165,7 @@ export class WebGLRenderer {
     }
 
     public toggleRainbowEffect() {
-        console.log('toggleRainbowEffect');
+        this.isRainbowEffectEnabled = !this.isRainbowEffectEnabled;
     }
 
     private createTexture(source: HTMLCanvasElement) {
