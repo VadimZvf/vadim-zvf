@@ -2,6 +2,9 @@ import config from './config';
 import fragmentShader from './fragment_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
 
+const fontName = 'monospace';
+const textColor = '#fff';
+
 interface IParams {
     size: {
         width: number;
@@ -18,20 +21,6 @@ export class WebGLRenderer {
         screenCanvas.style.opacity = '0';
         document.body.appendChild(screenCanvas);
         this.screenCanvasCtx = screenCanvas.getContext('2d');
-
-        this.screenCanvasCtx.font = `${config.fontSize}px monospace`;
-        this.screenCanvasCtx.fillStyle = 'white';
-        this.screenCanvasCtx.textBaseline = 'top';
-        const testSymbol = this.screenCanvasCtx.measureText('M');
-        const symbolWidth = testSymbol.width;
-        this.screenLineHeight =
-            testSymbol.fontBoundingBoxDescent +
-            testSymbol.fontBoundingBoxAscent;
-        const screenWidth = symbolWidth * config.symbolsPerLine;
-        const screenHeight = this.screenLineHeight * config.linesCount;
-
-        screenCanvas.width = screenWidth;
-        screenCanvas.height = screenHeight;
 
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
@@ -69,11 +58,26 @@ export class WebGLRenderer {
     }
 
     public setSize(size: { width: number; height: number }) {
-        this.renderCanvas.width = size.width;
-        this.renderCanvas.height = size.height;
+        const squareSize = Math.min(size.width, size.height);
+
+        this.renderCanvas.width = squareSize;
+        this.renderCanvas.height = squareSize;
     }
 
     public createScreen() {
+        this.screenCanvasCtx.font = `${config.fontSize}px ${fontName}`;
+        this.screenCanvasCtx.fillStyle = textColor;
+        this.screenCanvasCtx.textBaseline = 'top';
+        const testSymbol = this.screenCanvasCtx.measureText('M');
+        const symbolWidth = testSymbol.width;
+        this.screenLineHeight = testSymbol.fontBoundingBoxDescent;
+
+        const screenWidth = symbolWidth * config.symbolsPerLine;
+        const screenHeight = this.screenLineHeight * config.linesCount;
+
+        this.screenCanvasCtx.canvas.width = screenWidth;
+        this.screenCanvasCtx.canvas.height = screenHeight;
+
         this.gl = this.renderCanvas.getContext('webgl');
 
         const vertices = new Float32Array([
@@ -128,8 +132,17 @@ export class WebGLRenderer {
             this.screenCanvasCtx.canvas.height
         );
 
-        this.screenCanvasCtx.font = `${config.fontSize}px monospace`;
-        this.screenCanvasCtx.fillStyle = 'white';
+        this.screenCanvasCtx.rect(
+            0,
+            0,
+            this.screenCanvasCtx.canvas.width,
+            this.screenCanvasCtx.canvas.height
+        );
+        this.screenCanvasCtx.fillStyle = 'black';
+        this.screenCanvasCtx.fill();
+
+        this.screenCanvasCtx.font = `${config.fontSize}px ${fontName}`;
+        this.screenCanvasCtx.fillStyle = textColor;
         this.screenCanvasCtx.textBaseline = 'top';
 
         const croppedLines = lines.slice(0, config.linesCount);
