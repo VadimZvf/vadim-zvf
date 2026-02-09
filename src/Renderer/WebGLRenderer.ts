@@ -1,5 +1,7 @@
 import config from './config';
 import fragmentShader from './fragment_shader.frag?raw';
+import blurShader from './blur_shader.frag?raw';
+import mergeShader from './merge_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
 
 const fontName = 'monospace';
@@ -30,30 +32,99 @@ export class WebGLRenderer {
 
     private renderCanvas: HTMLCanvasElement;
     private renderProgram: WebGLProgram;
+    private mergeProgram: WebGLProgram;
+
+    private blurProgram: WebGLProgram;
+    private blurTextureA: WebGLTexture;
+    private blurTextureB: WebGLTexture;
+    private blurFramebufferA: WebGLFramebuffer;
+    private blurFramebufferB: WebGLFramebuffer;
+
     private gl: WebGLRenderingContext;
 
     private screenTexture: WebGLTexture;
+    private screenBendedTexture: WebGLTexture;
+    private screenBendedFramebuffer: WebGLFramebuffer;
     private screenCanvasCtx: CanvasRenderingContext2D;
     private screenLineHeight: number;
     private isRainbowEffectEnabled: boolean = false;
 
     public render(timeMs: number) {
+        this.gl.useProgram(this.renderProgram);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.blurFramebufferB);
+
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenTexture);
         this.gl.uniform1i(
             this.gl.getUniformLocation(this.renderProgram, 'uScreenTexture'),
             0
         );
-
         this.gl.uniform1f(
             this.gl.getUniformLocation(this.renderProgram, 'uShowRainbow'),
             this.isRainbowEffectEnabled ? 1 : 0
         );
-
         this.gl.uniform1f(
             this.gl.getUniformLocation(this.renderProgram, 'time'),
             timeMs / 100
         );
+
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        this.gl.bindFramebuffer(
+            this.gl.FRAMEBUFFER,
+            this.screenBendedFramebuffer
+        );
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+        this.gl.useProgram(this.blurProgram);
+
+        for (let i = 0; i < 8; i++) {
+            [this.blurTextureA, this.blurTextureB] = [
+                this.blurTextureB,
+                this.blurTextureA,
+            ];
+            [this.blurFramebufferA, this.blurFramebufferB] = [
+                this.blurFramebufferB,
+                this.blurFramebufferA,
+            ];
+
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.blurFramebufferB);
+
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.blurTextureA);
+            this.gl.uniform1i(
+                this.gl.getUniformLocation(this.blurProgram, 'uTexture'),
+                0
+            );
+            this.gl.uniform2f(
+                this.gl.getUniformLocation(this.blurProgram, 'u_resolution'),
+                this.renderCanvas.width,
+                this.renderCanvas.height
+            );
+            this.gl.uniform1f(
+                this.gl.getUniformLocation(this.blurProgram, 'u_blurRadius'),
+                0.5
+            );
+            this.gl.uniform1f(
+                this.gl.getUniformLocation(this.blurProgram, 'u_horizontal'),
+                i % 2 === 0 ? 1 : 0
+            );
+            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        }
+
+        this.gl.useProgram(this.mergeProgram);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.blurTextureB);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(this.mergeProgram, 'uTexture1'),
+            0
+        );
+        this.gl.activeTexture(this.gl.TEXTURE1);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenBendedTexture);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(this.mergeProgram, 'uTexture2'),
+            1
+        );
+
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
@@ -80,6 +151,30 @@ export class WebGLRenderer {
 
         this.gl = this.renderCanvas.getContext('webgl');
 
+        this.blurTextureA = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.blurTextureB = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.blurFramebufferA = this.createFramebuffer(this.blurTextureA);
+        this.blurFramebufferB = this.createFramebuffer(this.blurTextureB);
+
+        this.renderProgram = this.createProgram(vertexShader, fragmentShader);
+        this.blurProgram = this.createProgram(vertexShader, blurShader);
+        this.mergeProgram = this.createProgram(vertexShader, mergeShader);
+
+        this.screenTexture = this.createTexture(this.screenCanvasCtx.canvas);
+        this.screenBendedTexture = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.screenBendedFramebuffer = this.createFramebuffer(
+            this.screenBendedTexture
+        );
+
         const vertices = new Float32Array([
             // bottom left
             -1, -1,
@@ -91,19 +186,6 @@ export class WebGLRenderer {
             1, 1,
         ]);
 
-        this.renderProgram = this.gl.createProgram();
-        this.gl.attachShader(
-            this.renderProgram,
-            this.createShader(this.gl.VERTEX_SHADER, vertexShader)
-        );
-        this.gl.attachShader(
-            this.renderProgram,
-            this.createShader(this.gl.FRAGMENT_SHADER, fragmentShader)
-        );
-        this.gl.linkProgram(this.renderProgram);
-
-        this.gl.useProgram(this.renderProgram);
-
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
 
@@ -113,9 +195,6 @@ export class WebGLRenderer {
         );
         this.gl.enableVertexAttribArray(a_position);
         this.gl.vertexAttribPointer(a_position, 2, this.gl.FLOAT, false, 0, 0);
-
-        const screenCanvas = this.screenCanvasCtx.canvas;
-        this.screenTexture = this.createTexture(screenCanvas);
     }
 
     public setLines(lines: string[]) {
@@ -131,15 +210,6 @@ export class WebGLRenderer {
             this.screenCanvasCtx.canvas.width,
             this.screenCanvasCtx.canvas.height
         );
-
-        this.screenCanvasCtx.rect(
-            0,
-            0,
-            this.screenCanvasCtx.canvas.width,
-            this.screenCanvasCtx.canvas.height
-        );
-        this.screenCanvasCtx.fillStyle = 'black';
-        this.screenCanvasCtx.fill();
 
         this.screenCanvasCtx.font = `${config.fontSize}px ${fontName}`;
         this.screenCanvasCtx.fillStyle = textColor;
@@ -217,6 +287,59 @@ export class WebGLRenderer {
         return texture;
     }
 
+    private createTextureWithSize(width: number, height: number) {
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        let texture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_MIN_FILTER,
+            this.gl.NEAREST
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_MAG_FILTER,
+            this.gl.NEAREST
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_WRAP_S,
+            this.gl.CLAMP_TO_EDGE
+        );
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_WRAP_T,
+            this.gl.CLAMP_TO_EDGE
+        );
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            width,
+            height,
+            0,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            null
+        );
+
+        return texture;
+    }
+
+    private createFramebuffer(texture: WebGLTexture) {
+        let framebuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+        this.gl.framebufferTexture2D(
+            this.gl.FRAMEBUFFER,
+            this.gl.COLOR_ATTACHMENT0,
+            this.gl.TEXTURE_2D,
+            texture,
+            0
+        );
+
+        return framebuffer;
+    }
+
     private createShader(type: number, src: string) {
         const s = this.gl.createShader(type);
         this.gl.shaderSource(s, src);
@@ -224,6 +347,23 @@ export class WebGLRenderer {
         if (!this.gl.getShaderParameter(s, this.gl.COMPILE_STATUS))
             console.error(this.gl.getShaderInfoLog(s));
         return s;
+    }
+
+    private createProgram(vertexShader: string, fragmentShader: string) {
+        const program = this.gl.createProgram();
+        this.gl.attachShader(
+            program,
+            this.createShader(this.gl.VERTEX_SHADER, vertexShader)
+        );
+        this.gl.attachShader(
+            program,
+            this.createShader(this.gl.FRAGMENT_SHADER, fragmentShader)
+        );
+        this.gl.linkProgram(program);
+        if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+            console.error(this.gl.getProgramInfoLog(program));
+        }
+        return program;
     }
 }
 
