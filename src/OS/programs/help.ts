@@ -1,7 +1,7 @@
 import createProgram from '../createProgram';
 
 export default createProgram('help', function* (args, system) {
-    system.addContent([
+    system.write([
         'Available commands:',
         ' - contacts',
         ' - socials',

@@ -1,7 +1,7 @@
 import createProgram from '../createProgram';
 
 export default createProgram('greeting', function* (args, system) {
-    system.addContent([
+    system.write([
         'HELLO!',
         'Nice to meet U!',
         'My name is Vadim and this is my petproject',

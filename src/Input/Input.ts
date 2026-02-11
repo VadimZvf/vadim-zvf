@@ -3,6 +3,7 @@ const isAndroid = /Android/i.test(navigator.userAgent);
 class Input {
     constructor() {
         this.textareaNode = document.createElement('textarea');
+        this.textareaNode.autocapitalize = 'off';
         this.textareaNode.style.position = 'absolute';
         this.textareaNode.style.top = '50%';
         this.textareaNode.style.left = '-999px';

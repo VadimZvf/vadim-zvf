@@ -83,6 +83,26 @@ export default class Screen {
         this.updateRenderer();
     }
 
+    public write(symbol: string) {
+        if (symbol === '\n') {
+            this.content.push('');
+            this.updateRenderer();
+            return;
+        }
+
+        const lastLine = this.content.pop() || '';
+
+        if (lastLine.length >= rendererConfig.symbolsPerLine) {
+            this.content.push(lastLine);
+            this.content.push(symbol);
+        } else {
+            this.content.push(lastLine + symbol);
+        }
+
+        this.checkLinesCount();
+        this.updateRenderer();
+    }
+
     public setInputArrow(newArrow: string) {
         this.inputArrow = newArrow;
         this.updateRenderer();

@@ -59,7 +59,7 @@ export default createProgram('show', function* (args, system) {
         show(imageName, system);
         return;
     } else {
-        system.addContent([
+        system.write([
             'I can show you a cat or a dog. who do you want to see?',
         ]);
     }

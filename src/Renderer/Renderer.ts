@@ -12,7 +12,6 @@ class Renderer {
 
         this.webGLRenderer = new WebGLRenderer({ size });
 
-        this.webGLRenderer.createScreen();
         this.init();
     }
 

@@ -2,6 +2,7 @@ import config from './config';
 import fragmentShader from './fragment_shader.frag?raw';
 import blurShader from './blur_shader.frag?raw';
 import mergeShader from './merge_shader.frag?raw';
+import copyShader from './copy_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
 
 const fontName = 'monospace';
@@ -16,23 +17,107 @@ interface IParams {
 
 export class WebGLRenderer {
     constructor(params: IParams) {
+        this.pixelRatio = window.devicePixelRatio || 1;
+
         const screenCanvas = document.createElement('canvas');
         screenCanvas.style.position = 'absolute';
-        screenCanvas.style.top = '-100%';
-        screenCanvas.style.left = '-100%';
+        screenCanvas.style.top = '-1000%';
+        screenCanvas.style.left = '-1000%';
         screenCanvas.style.opacity = '0';
+        screenCanvas.style.clipPath = 'rect(0, 0, 0, 0)';
         document.body.appendChild(screenCanvas);
-        this.screenCanvasCtx = screenCanvas.getContext('2d');
+
+        const context2D = screenCanvas.getContext('2d');
+
+        if (context2D === null) {
+            throw new Error('Failed to get 2d context');
+        }
+
+        this.screenCanvasCtx = context2D;
 
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
         this.renderCanvas = canvas;
         this.setSize(params.size);
+
+        this.screenCanvasCtx.font = `${config.fontSize}px ${fontName}`;
+        this.screenCanvasCtx.fillStyle = textColor;
+        this.screenCanvasCtx.textBaseline = 'top';
+        const testSymbol = this.screenCanvasCtx.measureText('M');
+        const symbolWidth = testSymbol.width;
+        this.screenLineHeight = testSymbol.fontBoundingBoxDescent;
+
+        const screenWidth = symbolWidth * config.symbolsPerLine;
+        const screenHeight = this.screenLineHeight * config.linesCount;
+
+        // Scale screen canvas by pixel ratio for better quality
+        this.screenCanvasCtx.canvas.width = screenWidth * this.pixelRatio;
+        this.screenCanvasCtx.canvas.height = screenHeight * this.pixelRatio;
+        this.screenCanvasCtx.scale(this.pixelRatio, this.pixelRatio);
+
+        const contextWebGL = this.renderCanvas.getContext('webgl', {
+            antialias: true,
+            alpha: false,
+            preserveDrawingBuffer: false,
+        });
+
+        if (contextWebGL === null) {
+            throw new Error('Failed to get webgl context');
+        }
+
+        this.gl = contextWebGL;
+
+        this.blurTextureA = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.blurTextureB = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.blurFramebufferA = this.createFramebuffer(this.blurTextureA);
+        this.blurFramebufferB = this.createFramebuffer(this.blurTextureB);
+
+        this.renderProgram = this.createProgram(vertexShader, fragmentShader);
+        this.blurProgram = this.createProgram(vertexShader, blurShader);
+        this.mergeProgram = this.createProgram(vertexShader, mergeShader);
+        this.copyProgram = this.createProgram(vertexShader, copyShader);
+
+        this.screenTexture = this.createTexture(this.screenCanvasCtx.canvas);
+        this.screenBendedTexture = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.screenBendedFramebuffer = this.createFramebuffer(
+            this.screenBendedTexture
+        );
+
+        const vertices = new Float32Array([
+            // bottom left
+            -1, -1,
+            // bottom right
+            1, -1,
+            // top left
+            -1, 1,
+            // top right
+            1, 1,
+        ]);
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+
+        const a_position = this.gl.getAttribLocation(
+            this.renderProgram,
+            'a_position'
+        );
+        this.gl.enableVertexAttribArray(a_position);
+        this.gl.vertexAttribPointer(a_position, 2, this.gl.FLOAT, false, 0, 0);
     }
 
     private renderCanvas: HTMLCanvasElement;
     private renderProgram: WebGLProgram;
     private mergeProgram: WebGLProgram;
+    private copyProgram: WebGLProgram;
 
     private blurProgram: WebGLProgram;
     private blurTextureA: WebGLTexture;
@@ -48,6 +133,7 @@ export class WebGLRenderer {
     private screenCanvasCtx: CanvasRenderingContext2D;
     private screenLineHeight: number;
     private isRainbowEffectEnabled: boolean = false;
+    private pixelRatio: number;
 
     public render(timeMs: number) {
         this.gl.useProgram(this.renderProgram);
@@ -101,7 +187,7 @@ export class WebGLRenderer {
             );
             this.gl.uniform1f(
                 this.gl.getUniformLocation(this.blurProgram, 'u_blurRadius'),
-                0.5
+                3.0
             );
             this.gl.uniform1f(
                 this.gl.getUniformLocation(this.blurProgram, 'u_horizontal'),
@@ -125,76 +211,36 @@ export class WebGLRenderer {
             1
         );
 
+        // this.gl.useProgram(this.copyProgram);
+        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        // this.gl.activeTexture(this.gl.TEXTURE0);
+        // this.gl.bindTexture(this.gl.TEXTURE_2D, this.blurTextureB);
+        // this.gl.uniform1i(
+        //     this.gl.getUniformLocation(this.copyProgram, 'uTexture'),
+        //     0
+        // );
+
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
     public setSize(size: { width: number; height: number }) {
         const squareSize = Math.min(size.width, size.height);
 
-        this.renderCanvas.width = squareSize;
-        this.renderCanvas.height = squareSize;
-    }
+        this.renderCanvas.style.width = squareSize + 'px';
+        this.renderCanvas.style.height = squareSize + 'px';
 
-    public createScreen() {
-        this.screenCanvasCtx.font = `${config.fontSize}px ${fontName}`;
-        this.screenCanvasCtx.fillStyle = textColor;
-        this.screenCanvasCtx.textBaseline = 'top';
-        const testSymbol = this.screenCanvasCtx.measureText('M');
-        const symbolWidth = testSymbol.width;
-        this.screenLineHeight = testSymbol.fontBoundingBoxDescent;
+        // Set actual canvas size (device pixels) for high-DPI displays
+        this.renderCanvas.width = squareSize * this.pixelRatio;
+        this.renderCanvas.height = squareSize * this.pixelRatio;
 
-        const screenWidth = symbolWidth * config.symbolsPerLine;
-        const screenHeight = this.screenLineHeight * config.linesCount;
-
-        this.screenCanvasCtx.canvas.width = screenWidth;
-        this.screenCanvasCtx.canvas.height = screenHeight;
-
-        this.gl = this.renderCanvas.getContext('webgl');
-
-        this.blurTextureA = this.createTextureWithSize(
-            this.renderCanvas.width,
-            this.renderCanvas.height
-        );
-        this.blurTextureB = this.createTextureWithSize(
-            this.renderCanvas.width,
-            this.renderCanvas.height
-        );
-        this.blurFramebufferA = this.createFramebuffer(this.blurTextureA);
-        this.blurFramebufferB = this.createFramebuffer(this.blurTextureB);
-
-        this.renderProgram = this.createProgram(vertexShader, fragmentShader);
-        this.blurProgram = this.createProgram(vertexShader, blurShader);
-        this.mergeProgram = this.createProgram(vertexShader, mergeShader);
-
-        this.screenTexture = this.createTexture(this.screenCanvasCtx.canvas);
-        this.screenBendedTexture = this.createTextureWithSize(
-            this.renderCanvas.width,
-            this.renderCanvas.height
-        );
-        this.screenBendedFramebuffer = this.createFramebuffer(
-            this.screenBendedTexture
-        );
-
-        const vertices = new Float32Array([
-            // bottom left
-            -1, -1,
-            // bottom right
-            1, -1,
-            // top left
-            -1, 1,
-            // top right
-            1, 1,
-        ]);
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-
-        const a_position = this.gl.getAttribLocation(
-            this.renderProgram,
-            'a_position'
-        );
-        this.gl.enableVertexAttribArray(a_position);
-        this.gl.vertexAttribPointer(a_position, 2, this.gl.FLOAT, false, 0, 0);
+        if (this.gl) {
+            this.gl.viewport(
+                0,
+                0,
+                this.renderCanvas.width,
+                this.renderCanvas.height
+            );
+        }
     }
 
     public setLines(lines: string[]) {
@@ -258,12 +304,12 @@ export class WebGLRenderer {
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
             this.gl.TEXTURE_MIN_FILTER,
-            this.gl.NEAREST
+            this.gl.LINEAR
         );
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
             this.gl.TEXTURE_MAG_FILTER,
-            this.gl.NEAREST
+            this.gl.LINEAR
         );
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
@@ -294,12 +340,12 @@ export class WebGLRenderer {
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
             this.gl.TEXTURE_MIN_FILTER,
-            this.gl.NEAREST
+            this.gl.LINEAR
         );
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
             this.gl.TEXTURE_MAG_FILTER,
-            this.gl.NEAREST
+            this.gl.LINEAR
         );
         this.gl.texParameteri(
             this.gl.TEXTURE_2D,
@@ -342,6 +388,11 @@ export class WebGLRenderer {
 
     private createShader(type: number, src: string) {
         const s = this.gl.createShader(type);
+
+        if (s === null) {
+            throw new Error('Failed to create shader');
+        }
+
         this.gl.shaderSource(s, src);
         this.gl.compileShader(s);
         if (!this.gl.getShaderParameter(s, this.gl.COMPILE_STATUS))

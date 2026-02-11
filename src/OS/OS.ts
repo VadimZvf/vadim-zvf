@@ -8,6 +8,7 @@ export interface IScreen {
     subscribeCommand(listener: (command: string) => void): void;
     toggleRainbowEffect(): void;
     addContent(lines: string[]): void;
+    write(symbol: string): void;
     resetInputArrow(): void;
     setInputArrow(arrow: string): void;
     clear(): void;
@@ -16,6 +17,7 @@ export interface IScreen {
 // Interface for programs
 export interface ISystem {
     addContent(lines: string[]): void;
+    write(lines: string[]): Promise<void>;
     requestText(data: IRequestText): IRequestTextFiber;
     toggleRainbowEffect(): void;
     clear(): void;
@@ -24,12 +26,12 @@ export interface ISystem {
 }
 
 export default class OS {
-    constructor(screen: IScreen, propgrams: IProgramDefinition[]) {
+    constructor(screen: IScreen, programs: IProgramDefinition[]) {
         this.handleCommand = this.handleCommand.bind(this);
 
         this.screen = screen;
         this.system = this.createSystem();
-        this.loadPrograms(propgrams);
+        this.loadPrograms(programs);
 
         screen.subscribeCommand(this.handleCommand);
     }
@@ -39,7 +41,7 @@ export default class OS {
     programs: {
         [programsName: string]: IProgram;
     } = {};
-    programInProgress: IProgramIterator | void;
+    programInProgress: IProgramIterator | null = null;
     systemApiInProgress: string | null = null;
 
     private loadPrograms(programs: IProgramDefinition[]) {
@@ -128,6 +130,15 @@ export default class OS {
     private createSystem(): ISystem {
         return {
             addContent: (lines) => this.screen.addContent(lines),
+            write: async (lines) => {
+                for (const line of lines) {
+                    this.screen.write('\n');
+                    for (const symbol of line) {
+                        this.screen.write(symbol);
+                        await new Promise((resolve) => setTimeout(resolve, 20));
+                    }
+                }
+            },
             toggleRainbowEffect: () => this.screen.toggleRainbowEffect(),
             clear: () => this.screen.clear(),
             requestText: (data: IRequestText): IRequestTextFiber => {

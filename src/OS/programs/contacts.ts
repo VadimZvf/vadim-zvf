@@ -2,7 +2,7 @@ import createProgram from '../createProgram';
 import openLink from '../utils/open_link';
 
 export default createProgram('contacts', function* (args, system) {
-    system.addContent([
+    system.write([
         'email: vadim.zvf@gmail.com',
         '',
         'Do you want to write to me?',

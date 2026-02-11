@@ -30,7 +30,7 @@ export default createProgram('socials', function* (args, system) {
         openSocialLink(socialName, system);
         return;
     } else {
-        system.addContent([
+        system.write([
             'I am in social networks:',
             ' - vk',
             ' - instagram',
