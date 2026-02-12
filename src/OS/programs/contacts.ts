@@ -5,7 +5,7 @@ export default createProgram('contacts', function* (args, system) {
     system.write([
         'email: vadim.zvf@gmail.com',
         '',
-        'Do you want to write to me?',
+        'Do you want to send me an email?',
     ]);
 
     const nextCommands: string[] = yield system.requestText({

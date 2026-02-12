@@ -3,9 +3,9 @@ import createProgram from '../createProgram';
 export default createProgram('greeting', function* (args, system) {
     system.write([
         'HELLO!',
-        'Nice to meet U!',
+        'Nice to meet you!',
         'My name is Vadim and this is my petproject',
         '',
-        'If U need help, just write command - help',
+        'If you need help, just type command - "help"',
     ]);
 });

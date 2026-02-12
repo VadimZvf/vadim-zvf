@@ -34,6 +34,8 @@ export default class OS {
         this.loadPrograms(programs);
 
         screen.subscribeCommand(this.handleCommand);
+
+        window.requestAnimationFrame(this.update.bind(this));
     }
 
     screen: IScreen;
@@ -43,6 +45,9 @@ export default class OS {
     } = {};
     programInProgress: IProgramIterator | null = null;
     systemApiInProgress: string | null = null;
+    currentWritingText: string = '';
+    private symbolWritingTime: number = 20; // In milliseconds
+    private lastWriteTime: number = 0;
 
     private loadPrograms(programs: IProgramDefinition[]) {
         for (const programInfo of programs) {
@@ -65,6 +70,21 @@ export default class OS {
         const [programName, ...args] = units;
 
         this.runProgram(programName, args);
+    }
+
+    public update(time: number) {
+        if (this.currentWritingText.length > 0) {
+            const timeDiff = time - this.lastWriteTime;
+
+            if (timeDiff >= this.symbolWritingTime) {
+                this.lastWriteTime = time;
+
+                this.screen.write(this.currentWritingText[0]);
+                this.currentWritingText = this.currentWritingText.substring(1);
+            }
+        }
+
+        window.requestAnimationFrame(this.update.bind(this));
     }
 
     public runProgram(name: string, args: string[]) {
@@ -131,13 +151,7 @@ export default class OS {
         return {
             addContent: (lines) => this.screen.addContent(lines),
             write: async (lines) => {
-                for (const line of lines) {
-                    this.screen.write('\n');
-                    for (const symbol of line) {
-                        this.screen.write(symbol);
-                        await new Promise((resolve) => setTimeout(resolve, 20));
-                    }
-                }
+                this.currentWritingText = '\n' + lines.join('\n');
             },
             toggleRainbowEffect: () => this.screen.toggleRainbowEffect(),
             clear: () => this.screen.clear(),

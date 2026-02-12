@@ -31,7 +31,7 @@ export default createProgram('socials', function* (args, system) {
         return;
     } else {
         system.write([
-            'I am in social networks:',
+            'I am available on these social networks:',
             ' - vk',
             ' - instagram',
             ' - linkedin',

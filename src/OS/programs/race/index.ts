@@ -159,7 +159,7 @@ function checkCollapsing(enemies: IPosition[], user: IPosition): boolean {
 }
 
 function getBestScore(): number {
-    const data = JSON.parse(window.localStorage.getItem('race')) || {
+    const data = JSON.parse(window.localStorage.getItem('race') ?? '{}') || {
         bestScore: 0,
     };
     return data.bestScore;
@@ -181,7 +181,7 @@ export default createProgram('race', function* (args, system) {
     speedSound.volume = 0.3;
 
     const userPosition = { x: 0, y: 0 };
-    let requestID: number;
+    let requestID: number = 0;
 
     function startGame() {
         const bestScore = getBestScore();
