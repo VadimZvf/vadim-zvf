@@ -1,9 +1,11 @@
 import config from './config';
 import fragmentShader from './fragment_shader.frag?raw';
 import blurShader from './blur_shader.frag?raw';
+import paintingFrameShader from './painting_frame.frag?raw';
 import mergeShader from './merge_shader.frag?raw';
 import copyShader from './copy_shader.frag?raw';
 import vertexShader from './vertex_shader.frag?raw';
+import frameImage from './frame.png?url';
 
 const fontName = 'monospace';
 const textColor = '#fff';
@@ -91,6 +93,62 @@ export class WebGLRenderer {
         this.screenBendedFramebuffer = this.createFramebuffer(
             this.screenBendedTexture
         );
+        this.paintedFrameTexture = this.createTextureWithSize(
+            this.renderCanvas.width,
+            this.renderCanvas.height
+        );
+        this.paintedFrameFramebuffer = this.createFramebuffer(
+            this.paintedFrameTexture
+        );
+        this.paintingFrameProgram = this.createProgram(
+            vertexShader,
+            paintingFrameShader
+        );
+
+        this.frameTexture = this.gl.createTexture();
+        const srcType = this.gl.UNSIGNED_BYTE;
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.frameTexture);
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            1,
+            1,
+            0,
+            this.gl.RGBA,
+            srcType,
+            // transparent image at the loading time
+            new Uint8Array([0, 0, 0, 0])
+        );
+
+        const image = new Image();
+        image.src = frameImage;
+        image.onload = () => {
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.frameTexture);
+            this.gl.texImage2D(
+                this.gl.TEXTURE_2D,
+                0,
+                this.gl.RGBA,
+                this.gl.RGBA,
+                srcType,
+                image
+            );
+            this.gl.texParameteri(
+                this.gl.TEXTURE_2D,
+                this.gl.TEXTURE_WRAP_S,
+                this.gl.CLAMP_TO_EDGE
+            );
+            this.gl.texParameteri(
+                this.gl.TEXTURE_2D,
+                this.gl.TEXTURE_WRAP_T,
+                this.gl.CLAMP_TO_EDGE
+            );
+            this.gl.texParameteri(
+                this.gl.TEXTURE_2D,
+                this.gl.TEXTURE_MIN_FILTER,
+                this.gl.LINEAR
+            );
+        };
 
         const vertices = new Float32Array([
             // bottom left
@@ -117,6 +175,7 @@ export class WebGLRenderer {
     private renderCanvas: HTMLCanvasElement;
     private renderProgram: WebGLProgram;
     private mergeProgram: WebGLProgram;
+    private paintingFrameProgram: WebGLProgram;
     private copyProgram: WebGLProgram;
 
     private blurProgram: WebGLProgram;
@@ -125,9 +184,13 @@ export class WebGLRenderer {
     private blurFramebufferA: WebGLFramebuffer;
     private blurFramebufferB: WebGLFramebuffer;
 
+    private paintedFrameTexture: WebGLTexture;
+    private paintedFrameFramebuffer: WebGLFramebuffer;
+
     private gl: WebGLRenderingContext;
 
     private screenTexture: WebGLTexture;
+    private frameTexture: WebGLTexture;
     private screenBendedTexture: WebGLTexture;
     private screenBendedFramebuffer: WebGLFramebuffer;
     private screenCanvasCtx: CanvasRenderingContext2D;
@@ -136,6 +199,7 @@ export class WebGLRenderer {
     private pixelRatio: number;
 
     public render(timeMs: number) {
+        // Rendering the bended screen into the blur texture, will be used for the glow effect
         this.gl.useProgram(this.renderProgram);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.blurFramebufferB);
 
@@ -153,14 +217,16 @@ export class WebGLRenderer {
             this.gl.getUniformLocation(this.renderProgram, 'time'),
             timeMs / 100
         );
-
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+        // Rendering "clean" bended screen
         this.gl.bindFramebuffer(
             this.gl.FRAMEBUFFER,
             this.screenBendedFramebuffer
         );
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
+        // Text glow
         this.gl.useProgram(this.blurProgram);
 
         for (let i = 0; i < 8; i++) {
@@ -196,8 +262,37 @@ export class WebGLRenderer {
             this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
         }
 
+        // Painting frame
+        this.gl.useProgram(this.paintingFrameProgram);
+        this.gl.bindFramebuffer(
+            this.gl.FRAMEBUFFER,
+            this.paintedFrameFramebuffer
+        );
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.frameTexture);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(
+                this.paintingFrameProgram,
+                'uFrameTexture'
+            ),
+            0
+        );
+        this.gl.activeTexture(this.gl.TEXTURE1);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.screenBendedTexture);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(
+                this.paintingFrameProgram,
+                'uScreenTexture'
+            ),
+            1
+        );
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+        // Merging glow texture and "clean" bended screen
         this.gl.useProgram(this.mergeProgram);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.blurTextureB);
         this.gl.uniform1i(
@@ -209,6 +304,13 @@ export class WebGLRenderer {
         this.gl.uniform1i(
             this.gl.getUniformLocation(this.mergeProgram, 'uTexture2'),
             1
+        );
+        // Also adding the frame texture
+        this.gl.activeTexture(this.gl.TEXTURE2);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.paintedFrameTexture);
+        this.gl.uniform1i(
+            this.gl.getUniformLocation(this.mergeProgram, 'uTexture3'),
+            2
         );
 
         // this.gl.useProgram(this.copyProgram);
